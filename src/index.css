@@ -1,0 +1,10 @@
+body {
+  margin: 0;
+  font-family: var(--bs-body-font-family, system-ui, -apple-system, "Segoe UI", sans-serif);
+  background-color: var(--bs-body-bg, #f8f9fa);
+  color: var(--bs-body-color, #212529);
+}
+
+code, pre {
+  font-family: var(--bs-font-monospace, SFMono-Regular, Menlo, monospace);
+}
