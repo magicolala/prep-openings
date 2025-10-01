@@ -2,6 +2,17 @@ import type { IOpeningAnalyzer, ILichessExplorerService } from "../domain/ports"
 import type { ChessComGame, OpeningLine, PrepSuggestion } from "../domain/models";
 import { Chess } from "chess.js";
 
+const generateId = () => {
+  const cryptoObj = (typeof globalThis !== "undefined" ? (globalThis.crypto as Crypto | undefined) : undefined);
+  if (cryptoObj?.randomUUID) return cryptoObj.randomUUID();
+  if (cryptoObj?.getRandomValues) {
+    const buffer = new Uint8Array(16);
+    cryptoObj.getRandomValues(buffer);
+    return Array.from(buffer, b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+  }
+  return `fallback-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 /**
  * Heuristic analyzer: find shared opening prefixes in both players' last games,
  * then consult Lichess explorer to spot a move by either side that scores badly
@@ -51,13 +62,13 @@ export class OpeningAnalyzer implements IOpeningAnalyzer {
           // It's your move as White. If a popular reply for Black scores badly, prep a line that leads them there.
           const bad = lowScoreForBlack[0];
           suggestions.push({
-            id: crypto.randomUUID(),
+            id: generateId(),
             branch: {
               perspective: "opponent",
               color: "black",
               line: { sanLine: prefix },
               triggerMove: bad.san,
-              reason: `Réponse noire populaire mais score faible pour les Noirs (~${(bad.blackScore * 100).toFixed(0)}%).`,
+              reason: `RÃ©ponse noire populaire mais score faible pour les Noirs (~${(bad.blackScore * 100).toFixed(0)}%).`,
               explorerEvidence: bad,
             },
             recommendedFollowUp: this.extendWithFollowUp(prefix, bad.san),
@@ -66,7 +77,7 @@ export class OpeningAnalyzer implements IOpeningAnalyzer {
         if (!yourTurn && lowScoreForWhite.length) {
           const bad = lowScoreForWhite[0];
           suggestions.push({
-            id: crypto.randomUUID(),
+            id: generateId(),
             branch: {
               perspective: "opponent",
               color: "white",

@@ -10,6 +10,8 @@ import { Chess } from "chess.js";
 export class LichessExplorerService implements ILichessExplorerService {
   private base = "https://explorer.lichess.ovh/lichess"; // reliable mirror used by many projects
   private cacheTtlMs = 12 * 60 * 60 * 1000; // 12h
+  private requestQueue: Promise<void> = Promise.resolve();
+  private nextAllowedCallAt = 0;
 
   private readCache<T>(key: string): T | null {
     try {
@@ -34,12 +36,55 @@ export class LichessExplorerService implements ILichessExplorerService {
     }
   }
 
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private enqueueRequest<T>(task: () => Promise<T>): Promise<T> {
+    const run = this.requestQueue.then(task, task);
+    this.requestQueue = run.then(() => undefined, () => undefined);
+    return run;
+  }
+
+  private async fetchJsonWithRateLimit(url: string): Promise<any> {
+    const maxAttempts = 3;
+    let attempt = 0;
+    let lastError: Error | null = null;
+
+    while (attempt < maxAttempts) {
+      const now = Date.now();
+      if (now < this.nextAllowedCallAt) {
+        await this.sleep(this.nextAllowedCallAt - now);
+      }
+
+      const response = await fetch(url);
+
+      if (response.status === 429) {
+        const retryAfterHeader = Number(response.headers.get("Retry-After"));
+        const cooldown = Math.max(60000, Number.isFinite(retryAfterHeader) ? retryAfterHeader * 1000 : 60000);
+        this.nextAllowedCallAt = Date.now() + cooldown;
+        attempt += 1;
+        lastError = new Error("Lichess explorer a répondu 429. Pause d'une minute avant nouvel essai.");
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Lichess explorer failed: ${response.status}`);
+      }
+
+      this.nextAllowedCallAt = Date.now();
+      return response.json();
+    }
+
+    throw lastError ?? new Error("Lichess explorer rate limit dépassée à plusieurs reprises.");
+  }
+
   private sanToUciMoves(sanLine: string[]): string[] {
     if (!sanLine.length) return [];
     const chess = new Chess();
     const uciMoves: string[] = [];
     for (const san of sanLine) {
-      const move = chess.move(san, { sloppy: true });
+      const move = chess.move(san);
       if (!move) break;
       const promotion = move.promotion ? move.promotion : "";
       uciMoves.push(`${move.from}${move.to}${promotion}`);
@@ -50,26 +95,29 @@ export class LichessExplorerService implements ILichessExplorerService {
   async getPositionInfo(sanLine: string[], variant: "standard" = "standard"): Promise<ExplorerPositionInfo> {
     const uciMoves = this.sanToUciMoves(sanLine);
     const params = new URLSearchParams({ variant, speeds: "blitz,rapid,classical", ratings: "1800,2000,2200" });
-    if (uciMoves.length) params.set("play", uciMoves.join(" "));
+    if (uciMoves.length) params.set("play", uciMoves.join(","));
     const url = `${this.base}?${params.toString()}`;
-    const cacheKey = `lichess:pos:${variant}:${uciMoves.join(" ")}`;
+    const cacheKey = `lichess:pos:${variant}:${uciMoves.join(",")}`;
     const cached = this.readCache<ExplorerPositionInfo>(cacheKey);
     if (cached) return cached;
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`Lichess explorer failed: ${r.status}`);
-    const data = await r.json();
-    // Map shape we care about
-    const moves = (data.moves ?? []).map((m: any) => ({
-      san: m.san,
-      white: m.white ?? 0,
-      draws: m.draws ?? 0,
-      black: m.black ?? 0,
-      total: (m.white ?? 0) + (m.draws ?? 0) + (m.black ?? 0),
-      averageRating: m.averageRating,
-    }));
-    const opening = data.opening ? { name: data.opening.name, eco: data.opening.eco } : undefined;
-    const result: ExplorerPositionInfo = { opening, moves };
-    this.writeCache(cacheKey, result);
-    return result;
+
+    return this.enqueueRequest(async () => {
+      const cachedDuringWait = this.readCache<ExplorerPositionInfo>(cacheKey);
+      if (cachedDuringWait) return cachedDuringWait;
+
+      const data = await this.fetchJsonWithRateLimit(url);
+      const moves = (data.moves ?? []).map((m: any) => ({
+        san: m.san,
+        white: m.white ?? 0,
+        draws: m.draws ?? 0,
+        black: m.black ?? 0,
+        total: (m.white ?? 0) + (m.draws ?? 0) + (m.black ?? 0),
+        averageRating: m.averageRating,
+      }));
+      const opening = data.opening ? { name: data.opening.name, eco: data.opening.eco } : undefined;
+      const result: ExplorerPositionInfo = { opening, moves };
+      this.writeCache(cacheKey, result);
+      return result;
+    });
   }
 }
