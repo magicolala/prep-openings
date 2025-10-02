@@ -27,8 +27,8 @@ export default function PrepSheetView({ sheet, node }: PrepSheetViewProps) {
   if (!sheet.leaks.length) {
     return (
       <section className="prep-sheet prep-sheet--empty" aria-live="polite">
-        <h2>Pas de fuite majeure dÈtectÈe</h2>
-        <p>Nos heuristiques n'identifient pas de faiblesses flagrantes. Continue ‡ explorer des lignes annexes !</p>
+        <h2>Pas de fuite majeure d√©tect√©e</h2>
+        <p>Nos heuristiques n'identifient pas de faiblesses flagrantes. Continue √† explorer des lignes annexes !</p>
       </section>
     );
   }
@@ -36,12 +36,12 @@ export default function PrepSheetView({ sheet, node }: PrepSheetViewProps) {
   const headerTitle = (node.name ?? node.sanLine.join(" ")) || "ouverture";
 
   return (
-    <section className="prep-sheet" aria-label="Plan d'attaque personnalisÈ">
+    <section className="prep-sheet" aria-label="Plan d'attaque personnalis√©">
       <header className="prep-sheet__header">
-        <p className="micro-tag">Plan ciblÈ</p>
-        <h2>Prep sheet ñ {headerTitle}</h2>
+        <p className="micro-tag">Plan cibl√©</p>
+        <h2>Prep sheet {headerTitle}</h2>
         <p>
-          Chaque carte rÈsume une opportunitÈ : gap de performance, coups recommandÈs, parties modËles. Visualisation abstraite pour un onboarding rapide.
+          Chaque carte r√©sume une opportunit√© : √©cart de performance, coups recommand√©s, parties mod√®les. Visualisation abstraite pour un onboarding rapide.
         </p>
       </header>
 
@@ -61,7 +61,7 @@ export default function PrepSheetView({ sheet, node }: PrepSheetViewProps) {
               ? `${formatPercent(leak.playerScore)} vs ${formatPercent(leak.explorerScore)}`
               : formatPercent(leak.playerScore);
           const overlap = leak.yourOverlap
-            ? `Ton score ${formatPercent(leak.yourOverlap.score)} ∑ ${leak.yourOverlap.frequency} parties`
+            ? `Ton score ${formatPercent(leak.yourOverlap.score)} sur ${leak.yourOverlap.frequency} parties`
             : null;
           const gap = leak.explorerScore !== undefined ? leak.explorerScore - leak.playerScore : null;
           const dangerLevel = Math.min(1, Math.max(0, leak.playerScore));
@@ -90,14 +90,16 @@ export default function PrepSheetView({ sheet, node }: PrepSheetViewProps) {
                   <span className="insight-caption">{leak.reason}</span>
                 </div>
                 <div>
-                  <span className="insight-label">FrÈquence</span>
+                  <span className="insight-label">Fr√©quence</span>
                   <p className="insight-value">{leak.frequency} parties</p>
-                  {popularity !== null && <span className="insight-caption">PopularitÈ explorer {formatPercent(popularity)}</span>}
+                  {popularity !== null && (
+                    <span className="insight-caption">Popularit√© Explorer {formatPercent(popularity)}</span>
+                  )}
                 </div>
                 <div>
                   <span className="insight-label">Gap</span>
                   <p className="insight-value">{leakScoreDiff}</p>
-                  {gap !== null && <span className="insight-caption">…cart {gap > 0 ? "‡ exploiter" : "‡ surveiller"}</span>}
+                  {gap !== null && <span className="insight-caption">√âcart {gap > 0 ? "√† exploiter" : "√† surveiller"}</span>}
                 </div>
               </div>
 
@@ -114,18 +116,18 @@ export default function PrepSheetView({ sheet, node }: PrepSheetViewProps) {
                       </span>
                     ))
                   ) : (
-                    <span className="response-chip response-chip--empty">Pas de rÈf claire</span>
+                    <span className="response-chip response-chip--empty">Pas de r√©f√©rence claire</span>
                   )}
                 </div>
                 <div className="leak-card__links">
                   {leak.sampleGameUrl && (
                     <a href={leak.sampleGameUrl} target="_blank" rel="noreferrer">
-                      Partie tÈmoin
+                      Partie t√©moin
                     </a>
                   )}
                   {leak.lichessRecentGames?.slice(0, 2).map((game) => (
                     <a key={game.id} href={game.url} target="_blank" rel="noreferrer">
-                      ModËle Lichess {game.speed ? `(${game.speed})` : ""}
+                      Mod√®le Lichess {game.speed ? `(${game.speed})` : ""}
                     </a>
                   ))}
                 </div>
@@ -137,7 +139,7 @@ export default function PrepSheetView({ sheet, node }: PrepSheetViewProps) {
 
       {sheet.modelGames.length > 0 && (
         <footer className="prep-sheet__footer">
-          <h3>Parties ‡ dÈcortiquer</h3>
+          <h3>Parties √† d√©cortiquer</h3>
           <div className="model-gallery">
             {sheet.modelGames.slice(0, 6).map((game) => (
               <a key={game.id} href={game.url} target="_blank" rel="noreferrer" className="model-card">

@@ -9,7 +9,7 @@ interface OpeningTreeColumnProps {
 
 const colorLabel: Record<Color, string> = {
   white: "Ses armes avec les Blancs",
-  black: "Ses lignes cote Noirs",
+  black: "Ses lignes côté Noirs",
 };
 
 const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
@@ -20,7 +20,7 @@ export default function OpeningTreeColumn({ color, nodes, activeNodeId, onSelect
       <section className="opening-column opening-column--empty">
         <header>
           <h3>{colorLabel[color]}</h3>
-          <p>Pas assez de parties recentes pour detecter des patterns fiables.</p>
+          <p>Pas assez de parties récentes pour détecter des patterns fiables.</p>
         </header>
       </section>
     );
@@ -32,10 +32,10 @@ export default function OpeningTreeColumn({ color, nodes, activeNodeId, onSelect
     <section className={`opening-column opening-column--${color}`}>
       <header className="opening-column__header">
         <div>
-          <p className="micro-tag">{color === "white" ? "En premiere" : "A la riposte"}</p>
+          <p className="micro-tag">{color === "white" ? "En première" : "À la riposte"}</p>
           <h3>{colorLabel[color]}</h3>
           <p className="opening-column__subtitle">
-            Visualisation abstraite: intensite = frequence, halo = danger potentiel, puces = coups clefs.
+            Visualisation abstraite : intensité = fréquence, halo = danger potentiel, puces = coups clés.
           </p>
         </div>
       </header>
@@ -72,7 +72,7 @@ export default function OpeningTreeColumn({ color, nodes, activeNodeId, onSelect
               <div className="line-card__body">
                 <div className="line-card__titles">
                   <h4>{title}</h4>
-                  <p className="line-card__san">{node.sanLine.join(" ") || "(debut de partie)"}</p>
+                  <p className="line-card__san">{node.sanLine.join(" ") || "(début de partie)"}</p>
                 </div>
                 <div className="line-card__meta">
                   <span>{node.frequency} parties</span>
@@ -96,7 +96,7 @@ export default function OpeningTreeColumn({ color, nodes, activeNodeId, onSelect
                       );
                     })
                   ) : (
-                    <span className="move-chip move-chip--empty">Pas de coup reference</span>
+                    <span className="move-chip move-chip--empty">Pas de coup référencé</span>
                   )}
                 </div>
               </div>
