@@ -4,6 +4,7 @@ export interface JourneyChapter {
   title: string;
   summary: string;
   accent?: string;
+  icon?: string;
 }
 
 interface JourneyNavigatorProps {
@@ -28,7 +29,14 @@ export function JourneyNavigator({ chapters, activeId, onSelect }: JourneyNaviga
             style={accentStyle}
           >
             <span className="journey-navigator__index">{index + 1}</span>
-            <span className="journey-navigator__label">{chapter.label}</span>
+            <span className="journey-navigator__label">
+              {chapter.icon && (
+                <span className="journey-navigator__icon" aria-hidden>
+                  {chapter.icon}
+                </span>
+              )}
+              {chapter.label}
+            </span>
             <span className="journey-navigator__title">{chapter.title}</span>
             <span className="journey-navigator__summary">{chapter.summary}</span>
           </button>

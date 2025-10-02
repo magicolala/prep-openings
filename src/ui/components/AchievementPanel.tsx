@@ -6,20 +6,20 @@ interface AchievementPanelProps {
 }
 
 const BADGES = [
-  { id: "eco", label: "Eco Designer", description: "Mode éco activé", icon: "??" },
-  { id: "voice", label: "Voice Navigator", description: "Navigation vocale disponible", icon: "??" },
+  { id: "eco", label: "Eco Designer", description: "Mode Ã©co activÃ©", icon: "ðŸŒ±" },
+  { id: "voice", label: "Voice Navigator", description: "Navigation vocale dispo", icon: "ðŸŽ™" },
   {
     id: "strategist",
     label: "Strategist",
-    description: "Repère 3 fuites ou plus",
-    icon: "??",
+    description: "RepÃ¨re 3 fuites ou plus",
+    icon: "â™ž",
     threshold: 3,
   },
   {
     id: "scout",
     label: "Opening Scout",
     description: "Explore 5 lignes",
-    icon: "???",
+    icon: "ðŸ§­",
     threshold: 5,
   },
 ];
@@ -36,10 +36,10 @@ export function AchievementPanel({ leaksFound, nodesExplored, ecoMode, voiceEnab
   const progress = Math.min(100, Math.round(((leaksFound + nodesExplored) / 10) * 100));
 
   return (
-    <section className="achievement-panel" aria-label="Progression et récompenses">
+    <section className="achievement-panel" aria-label="Progression et rÃ©compenses">
       <header className="achievement-panel__header">
         <h2>Gamification & feedback</h2>
-        <p>Visualise ta progression et débloque des badges éthiques.</p>
+        <p>Visualise ta progression et dÃ©bloque des badges Ã©thiques.</p>
       </header>
 
       <div className="achievement-panel__progress" role="img" aria-label={`Progression actuelle ${progress}%`}>
@@ -49,11 +49,11 @@ export function AchievementPanel({ leaksFound, nodesExplored, ecoMode, voiceEnab
       <div className="achievement-panel__stats">
         <div>
           <span className="achievement-panel__value">{nodesExplored}</span>
-          <span className="achievement-panel__caption">Lignes scannées</span>
+          <span className="achievement-panel__caption">Lignes scannÃ©es</span>
         </div>
         <div>
           <span className="achievement-panel__value">{leaksFound}</span>
-          <span className="achievement-panel__caption">Fuites détectées</span>
+          <span className="achievement-panel__caption">Fuites dÃ©tectÃ©es</span>
         </div>
       </div>
 

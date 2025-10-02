@@ -19,24 +19,28 @@ const CHAPTERS: JourneyChapter[] = [
     label: "Brief",
     title: "Prepare l'experience",
     summary: "Personnalise l'ambiance, choisis ton theme, active le mode eco pour une empreinte legere.",
+    icon: "🎯",
   },
   {
     id: "scouting",
     label: "Collecte",
     title: "Scanning en temps reel",
     summary: "Recuperation intelligente des parties recentes, IA qui filtre les signaux faibles.",
+    icon: "🔍",
   },
   {
     id: "analysis",
     label: "Analyse",
     title: "Cartographie des ouvertures",
     summary: "Visualisation abstraite, halos de danger, navigation hybride scroll et gestes.",
+    icon: "♞",
   },
   {
     id: "prep",
     label: "Plan",
     title: "Prep sheet augmente",
     summary: "Fuites detectees, reponses recommandees, storytelling interactif pour memoriser.",
+    icon: "🧠",
   },
 ];
 
@@ -388,6 +392,14 @@ export default function App() {
 
   const [activeChapter, setActiveChapter] = useState<string>(computedChapter);
 
+  const handleChapterSelect = useCallback(
+    (id: string) => {
+      setManualChapter(id);
+      setActiveChapter(id);
+    },
+    [setManualChapter, setActiveChapter]
+  );
+
   useEffect(() => {
     if (!manualChapter) {
       setActiveChapter(computedChapter);
@@ -412,6 +424,15 @@ export default function App() {
     if (!lastRun) base[2] = "mode clair";
     return base;
   }, [lastRun, voiceEnabled, voiceStatus]);
+
+  const breadcrumbItems = useMemo(
+    () => [
+      { id: "overview", label: "Panorama", icon: "🧭", active: !selectedNode },
+      { id: "white", label: "Blancs", icon: "⚪", active: selectedNode?.color === "white" },
+      { id: "black", label: "Noirs", icon: "⚫", active: selectedNode?.color === "black" },
+    ],
+    [selectedNode]
+  );
 
   const toggleVoiceListening = useCallback(() => {
     if (!voiceSupported || !voiceEnabled) return;
@@ -493,10 +514,7 @@ export default function App() {
         <JourneyNavigator
           chapters={CHAPTERS}
           activeId={activeChapter}
-          onSelect={(id) => {
-            setManualChapter(id);
-            setActiveChapter(id);
-          }}
+          onSelect={handleChapterSelect}
         />
       </header>
 
@@ -561,26 +579,69 @@ export default function App() {
           {statusCards}
 
           {tree && (
-            <div className="line-board" aria-live="polite">
-              <OpeningTreeColumn
-                color="white"
-                nodes={tree.opponent.byColor.white}
-                activeNodeId={selectedNode?.id ?? null}
-                onSelect={handleSelectNode}
-              />
-              <OpeningTreeColumn
-                color="black"
-                nodes={tree.opponent.byColor.black}
-                activeNodeId={selectedNode?.id ?? null}
-                onSelect={handleSelectNode}
-              />
-            </div>
+            <>
+              <nav className="experience-breadcrumb" aria-label="Fil d'Ariane de l'analyse">
+                <ol>
+                  {breadcrumbItems.map((item) => (
+                    <li
+                      key={item.id}
+                      className={item.active ? "is-active" : ""}
+                      aria-current={item.active ? "step" : undefined}
+                    >
+                      <span aria-hidden>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+
+              <div className="line-board" aria-live="polite">
+                <OpeningTreeColumn
+                  color="white"
+                  nodes={tree.opponent.byColor.white}
+                  activeNodeId={selectedNode?.id ?? null}
+                  onSelect={handleSelectNode}
+                />
+                <OpeningTreeColumn
+                  color="black"
+                  nodes={tree.opponent.byColor.black}
+                  activeNodeId={selectedNode?.id ?? null}
+                  onSelect={handleSelectNode}
+                />
+              </div>
+            </>
           )}
 
           {prepSheet && selectedNode && <PrepSheetView sheet={prepSheet} node={selectedNode} />}
         </section>
 
         <aside className="experience-aside">
+          <nav className="side-menu" aria-label="Navigation secondaire">
+            <p className="side-menu__title">Chapitres</p>
+            <ul className="side-menu__list">
+              {CHAPTERS.map((chapter) => {
+                const isActive = chapter.id === activeChapter;
+                return (
+                  <li key={chapter.id}>
+                    <button
+                      type="button"
+                      className={`side-menu__item${isActive ? " is-active" : ""}`}
+                      onClick={() => handleChapterSelect(chapter.id)}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      {chapter.icon && (
+                        <span className="side-menu__icon" aria-hidden>
+                          {chapter.icon}
+                        </span>
+                      )}
+                      <span>{chapter.label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+
           <VoiceInterface
             status={voiceStatus}
             transcript={voiceTranscript}
