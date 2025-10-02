@@ -32,20 +32,20 @@ export function ExperienceToolbar({ onToggleVoice, voiceListening, voiceSupporte
     ? voiceListening
       ? "Assistant vocal actif"
       : voiceEnabled
-        ? "Assistant vocal pret"
-        : "Assistant vocal desactive"
-    : "Assistant vocal non supporte";
+        ? "Assistant vocal prêt"
+        : "Assistant vocal désactivé"
+    : "Assistant vocal non supporté";
 
   return (
-    <div className="experience-toolbar" role="group" aria-label="Preferences d'experience">
+    <div className="experience-toolbar" role="group" aria-label="Préférences d'expérience">
       <button
         type="button"
         className="toolbar-chip"
         onClick={cycleTheme}
-        aria-label={`Changer le theme, actuel : ${appearance}`}
+        aria-label={`Changer le thème, actuel : ${appearance}`}
       >
         <span aria-hidden>*</span>
-        <span>{appearance === "auto" ? "Theme auto" : appearance === "dark" ? "Theme nuit" : "Theme jour"}</span>
+        <span>{appearance === "auto" ? "Thème auto" : appearance === "dark" ? "Thème nuit" : "Thème jour"}</span>
       </button>
 
       <label className="toolbar-slider" aria-label="Changer la couleur d'accent">
@@ -66,7 +66,7 @@ export function ExperienceToolbar({ onToggleVoice, voiceListening, voiceSupporte
         aria-pressed={motion === "dynamic"}
       >
         <span aria-hidden>+</span>
-        <span>{motion === "dynamic" ? "Motion vive" : "Motion douce"}</span>
+        <span>{motion === "dynamic" ? "Animations vives" : "Animations douces"}</span>
       </button>
 
       <button
@@ -76,7 +76,7 @@ export function ExperienceToolbar({ onToggleVoice, voiceListening, voiceSupporte
         aria-pressed={density === "comfortable"}
       >
         <span aria-hidden>=</span>
-        <span>{density === "comfortable" ? "Layout ample" : "Layout dense"}</span>
+        <span>{density === "comfortable" ? "Disposition ample" : "Disposition dense"}</span>
       </button>
 
       <button
@@ -86,7 +86,7 @@ export function ExperienceToolbar({ onToggleVoice, voiceListening, voiceSupporte
         aria-pressed={ecoMode}
       >
         <span aria-hidden>!</span>
-        <span>{ecoMode ? "Mode eco" : "Energie"}</span>
+        <span>{ecoMode ? "Mode éco" : "Énergie"}</span>
       </button>
 
       <button
@@ -97,7 +97,7 @@ export function ExperienceToolbar({ onToggleVoice, voiceListening, voiceSupporte
         disabled={!voiceSupported}
       >
         <span aria-hidden>~</span>
-        <span>{voiceEnabled ? "Voice on" : "Voice off"}</span>
+        <span>{voiceEnabled ? "Voix activée" : "Voix coupée"}</span>
       </button>
 
       <button

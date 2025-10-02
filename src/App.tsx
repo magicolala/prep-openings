@@ -17,15 +17,15 @@ const CHAPTERS: JourneyChapter[] = [
   {
     id: "context",
     label: "Brief",
-    title: "Prepare l'experience",
-    summary: "Personnalise l'ambiance, choisis ton theme, active le mode eco pour une empreinte legere.",
+    title: "Prépare l'expérience",
+    summary: "Personnalise l'ambiance, choisis ton thème, active le mode éco pour une empreinte légère.",
     icon: "🎯",
   },
   {
     id: "scouting",
     label: "Collecte",
-    title: "Scanning en temps reel",
-    summary: "Recuperation intelligente des parties recentes, IA qui filtre les signaux faibles.",
+    title: "Scan en temps réel",
+    summary: "Récupération intelligente des parties récentes, l'IA filtre les signaux faibles.",
     icon: "🔍",
   },
   {
@@ -38,8 +38,8 @@ const CHAPTERS: JourneyChapter[] = [
   {
     id: "prep",
     label: "Plan",
-    title: "Prep sheet augmente",
-    summary: "Fuites detectees, reponses recommandees, storytelling interactif pour memoriser.",
+    title: "Prep sheet augmentée",
+    summary: "Fuites détectées, réponses recommandées, storytelling interactif pour mémoriser.",
     icon: "🧠",
   },
 ];
@@ -47,9 +47,9 @@ const CHAPTERS: JourneyChapter[] = [
 const ACCENT_PRESETS = [
   { keywords: ["violet", "pourpre", "indigo"], hue: 248, label: "violet" },
   { keywords: ["corail", "rose", "magenta"], hue: 18, label: "corail" },
-  { keywords: ["emeraude", "vert", "jade"], hue: 150, label: "emeraude" },
+  { keywords: ["emeraude", "vert", "jade"], hue: 150, label: "émeraude" },
   { keywords: ["soleil", "or", "gold"], hue: 46, label: "solaire" },
-  { keywords: ["ocean", "bleu", "azur"], hue: 205, label: "ocean" },
+  { keywords: ["ocean", "bleu", "azur"], hue: 205, label: "océan" },
 ] as const;
 
 const DEFAULT_SUGGESTIONS = ["mode sombre", "chapitre analyse", "relance analyse"];
@@ -155,10 +155,10 @@ export default function App() {
         const opponentNodeCount = openingTree.opponent.byColor.white.length + openingTree.opponent.byColor.black.length;
         if (opponentNodeCount === 0) {
           const baseReason = openingTree.meta?.opponentCutoffApplied
-            ? "Pas assez de parties recentes pour dessiner un arbre"
-            : "Aucune partie exploitable meme en remontant l'historique";
+            ? "Pas assez de parties récentes pour dessiner un arbre"
+            : "Aucune partie exploitable même en remontant l'historique";
           const adjustments: string[] = [];
-          if (openingTree.meta?.opponentRelaxedWindow) adjustments.push("fenetre coups 4-16");
+          if (openingTree.meta?.opponentRelaxedWindow) adjustments.push("fenêtre coups 4-16");
           if (openingTree.meta?.opponentUsedFallback) adjustments.push("historique complet");
           const detailSuffix = adjustments.length ? ` Ajustements: ${adjustments.join(", ")}.` : "";
           setPrepError(`${baseReason}. (opp games: ${oppGames.length}, opp nodes: ${opponentNodeCount}).${detailSuffix}`);
@@ -194,7 +194,7 @@ export default function App() {
           explorer,
         });
         if (!sheet.leaks.length) {
-          setPrepError("Pas de fuite flagrante sur cette ligne, continue la preparation.");
+          setPrepError("Pas de fuite flagrante sur cette ligne, continue ta préparation.");
         }
         setPrepSheet(sheet);
       } catch (e: unknown) {
@@ -220,32 +220,32 @@ export default function App() {
       };
 
       if (!sanitized.trim()) {
-        return respond("Commande vide. Essaie mode sombre ou chapitre analyse.");
+        return respond("Commande vide. Essaie « mode sombre » ou « chapitre analyse ».");
       }
 
       if (includesAny("mode sombre", "mode nuit", "dark")) {
         if (appearance !== "dark") setAppearance("dark");
-        return respond("Theme nuit active.");
+        return respond("Thème nuit activé.");
       }
 
       if (includesAny("mode clair", "mode jour", "light")) {
         if (appearance !== "light") setAppearance("light");
-        return respond("Theme jour active.");
+        return respond("Thème jour activé.");
       }
 
       if (includesAny("mode auto", "automatique")) {
         if (appearance !== "auto") setAppearance("auto");
-        return respond("Theme auto synchronise.");
+        return respond("Thème auto synchronisé.");
       }
 
       if (includes("mode eco")) {
         const wantsDisable = includes("desactive") || includes("retire") || includes("coupe");
         if (wantsDisable) {
           if (ecoMode) toggleEcoMode();
-          return respond("Mode eco desactive.");
+          return respond("Mode éco désactivé.");
         }
         if (!ecoMode) toggleEcoMode();
-        return respond("Mode eco active.");
+        return respond("Mode éco activé.");
       }
 
       if (includesAny("motion douce", "animation douce", "calme", "slow")) {
@@ -255,41 +255,41 @@ export default function App() {
 
       if (includesAny("motion vive", "animation rapide", "dynamique")) {
         if (motion !== "dynamic") setMotion("dynamic");
-        return respond("Animations dynamiques activees.");
+        return respond("Animations dynamiques activées.");
       }
 
       if (includesAny("layout compact", "densite compacte", "compact", "dense")) {
         if (density !== "compact") setDensity("compact");
-        return respond("Layout compact active.");
+        return respond("Disposition compacte activée.");
       }
 
       if (includesAny("layout ample", "densite confortable", "confortable", "large")) {
         if (density !== "comfortable") setDensity("comfortable");
-        return respond("Layout ample active.");
+        return respond("Disposition ample activée.");
       }
 
       if (includesAny("couleur", "accent")) {
         for (const preset of ACCENT_PRESETS) {
           if (preset.keywords.some((keyword) => includes(keyword))) {
             if (accentHue !== preset.hue) setAccentHue(preset.hue);
-            return respond(`Accent ${preset.label} active.`);
+            return respond(`Accent ${preset.label} activé.`);
           }
         }
-        return respond("Dis une couleur: violet, corail, emeraude, solaire ou ocean.");
+        return respond("Dis une couleur : violet, corail, émeraude, solaire ou océan.");
       }
 
       if (includes("chapitre") || includes("section")) {
         if (includesAny("brief", "contexte")) {
           setManualChapter("context");
-          return respond("Chapitre brief affiche.");
+          return respond("Chapitre brief affiché.");
         }
         if (includesAny("collecte", "scout")) {
           setManualChapter("scouting");
-          return respond("Chapitre collecte active.");
+          return respond("Chapitre collecte activé.");
         }
         if (includes("analyse")) {
           setManualChapter("analysis");
-          return respond("Chapitre analyse active.");
+          return respond("Chapitre analyse activé.");
         }
         if (includesAny("plan", "prep", "preparation")) {
           setManualChapter("prep");
@@ -303,34 +303,34 @@ export default function App() {
           await run(lastRun.you, lastRun.opponent);
           return respond(`Je relance l'analyse pour ${lastRun.you} contre ${lastRun.opponent}.`);
         }
-        return respond("Aucune analyse memorisee.");
+        return respond("Aucune analyse mémorisée.");
       }
 
       if (includes("debug")) {
         const wantsClose = includes("ferme") || includes("masque") || includes("cache");
         if (wantsClose) {
           setDebugOpen(false);
-          return respond("Console debug masquee.");
+          return respond("Console debug masquée.");
         }
         setDebugOpen(true);
-        return respond("Console debug affichee.");
+        return respond("Console debug affichée.");
       }
 
       if (includes("assistant vocal") && includesAny("desactive", "coupe", "stop")) {
         if (voiceEnabled) toggleVoice();
-        return respond("Assistant vocal desactive.");
+        return respond("Assistant vocal désactivé.");
       }
 
       if (includes("assistant vocal") && includesAny("active", "demarre", "lance")) {
         if (!voiceEnabled) toggleVoice();
-        return respond("Assistant vocal active.");
+        return respond("Assistant vocal activé.");
       }
 
       if (includes("stop")) {
-        return respond("Micro coupe. Appuie sur le bouton pour reprendre.");
+        return respond("Micro coupé. Appuie sur le bouton pour reprendre.");
       }
 
-      return respond("Commande non reconnue. Essaie mode sombre ou chapitre analyse.");
+      return respond("Commande non reconnue. Essaie « mode sombre » ou « chapitre analyse ».");
     },
     [accentHue, appearance, density, ecoMode, lastRun, motion, run, setAccentHue, setAppearance, setDensity, setMotion, toggleEcoMode, toggleVoice, voiceEnabled]
   );
@@ -358,15 +358,15 @@ export default function App() {
 
   useEffect(() => {
     if (loading) {
-      setAssistantMessage("Je collecte les parties, respire.");
+      setAssistantMessage("Je collecte tes parties, respire.");
       return;
     }
     if (prepLoading) {
-      setAssistantMessage("Je cherche des modeles Lichess pertinents.");
+      setAssistantMessage("Je cherche des modèles Lichess pertinents.");
       return;
     }
     if (tree && !selectedNode) {
-      setAssistantMessage("Choisis une ligne pour creer ta prep sheet.");
+      setAssistantMessage("Choisis une ligne pour créer ta prep sheet.");
       return;
     }
     if (prepSheet && prepSheet.leaks.length === 0) {
@@ -374,7 +374,7 @@ export default function App() {
       return;
     }
     if (voiceStatus === "listening") {
-      setAssistantMessage("Je t'ecoute, demande un mode ou un chapitre.");
+      setAssistantMessage("Je t'écoute, demande un mode ou un chapitre.");
       return;
     }
     if (voiceStatus === "processing") {
@@ -452,7 +452,7 @@ export default function App() {
           <span aria-hidden>...</span>
           <div>
             <strong>Collecte Chess.com</strong>
-            <p>Je croise les parties recentes pour dresser le profil.</p>
+            <p>Je croise tes parties récentes pour dresser le profil.</p>
           </div>
         </div>
       )}
@@ -470,7 +470,7 @@ export default function App() {
           <span aria-hidden>??</span>
           <div>
             <strong>Explorer Lichess</strong>
-            <p>Je recupere la theorie recente et des modeles.</p>
+            <p>Je récupère la théorie récente et des modèles.</p>
           </div>
         </div>
       )}
@@ -488,7 +488,7 @@ export default function App() {
           <span aria-hidden>^^</span>
           <div>
             <strong>Entre deux pseudos</strong>
-            <p>On reconstruira la cartographie d'ouvertures recente.</p>
+            <p>On reconstruira la cartographie d'ouvertures récente.</p>
           </div>
         </div>
       )}
@@ -518,8 +518,8 @@ export default function App() {
             <div className="experience-brand">
               <span className="experience-brand__pulse" aria-hidden />
               <div>
-                <p className="micro-tag">Prep openings 2025</p>
-                <h1>Experience augmentee d'analyse d'ouvertures</h1>
+                <p className="micro-tag">Prépa openings 2025</p>
+                <h1>Expérience augmentée d'analyse d'ouvertures</h1>
               </div>
             </div>
             <div className="experience-header__controls">
@@ -556,11 +556,11 @@ export default function App() {
                 return (
                   <article className="story-card">
                     <h2>Scouting automatique</h2>
-                    <p>L'IA filtre les parties recentes, detecte les signaux faibles et respecte la sobriete numerique.</p>
+                    <p>L'IA filtre tes parties récentes, détecte les signaux faibles et respecte la sobriété numérique.</p>
                     <ul>
-                      <li>Fenetre temporelle dynamique</li>
-                      <li>Fallback historique controle</li>
-                      <li>Data publique uniquement</li>
+                      <li>Fenêtre temporelle dynamique</li>
+                      <li>Historique de secours contrôlé</li>
+                      <li>Données publiques uniquement</li>
                     </ul>
                   </article>
                 );
@@ -568,11 +568,11 @@ export default function App() {
                 return (
                   <article className="story-card">
                     <h2>Navigation innovante</h2>
-                    <p>Scroll vertical pour les chapitres, horizontal pour zoomer dans la ligne. Halos et micro animations.</p>
+                    <p>Scroll vertical pour les chapitres, horizontal pour zoomer dans la ligne. Halos et micro-animations.</p>
                     <ul>
-                      <li>Micro interactions clavier et tactile</li>
+                      <li>Micro-interactions clavier et tactile</li>
                       <li>Visualisation abstraite au lieu de tableaux</li>
-                      <li>Personnalisation motion et densite</li>
+                      <li>Personnalise animations et densité</li>
                     </ul>
                   </article>
                 );
@@ -580,10 +580,10 @@ export default function App() {
                 return (
                   <article className="story-card">
                     <h2>Storytelling interactif</h2>
-                    <p>Chaque fuite devient un scenario: score adverse, ripostes, parties modeles et badges engages.</p>
+                    <p>Chaque fuite devient un scénario : score adverse, ripostes, parties modèles et badges engagés.</p>
                     <ul>
-                      <li>Badges gamifies en temps reel</li>
-                      <li>Mode sombre optimise</li>
+                      <li>Badges gamifiés en temps réel</li>
+                      <li>Mode sombre optimisé</li>
                       <li>Assistant vocal accessible</li>
                     </ul>
                   </article>
@@ -591,12 +591,12 @@ export default function App() {
               default:
                 return (
                   <article className="story-card">
-                    <h2>Experience personnalisee</h2>
-                    <p>Choisis ton ambiance, active l'assistant, adapte la charge visuelle et garde le controle de tes donnees.</p>
+                    <h2>Expérience personnalisée</h2>
+                    <p>Choisis ton ambiance, active l'assistant, allège la charge visuelle et garde le contrôle de tes données.</p>
                     <ul>
-                      <li>Accessibilite WCAG 2.2</li>
-                      <li>Mode eco et assets legers</li>
-                      <li>Palette emotionnelle modulable</li>
+                      <li>Accessibilité WCAG 2.2</li>
+                      <li>Mode éco et assets légers</li>
+                      <li>Palette émotionnelle modulable</li>
                     </ul>
                   </article>
                 );
@@ -701,16 +701,16 @@ export default function App() {
 
       <footer className="experience-footer">
         <div>
-          <strong>Respect et durabilite</strong>
-          <p>Empreinte suivie, dark mode optimise, ressources compressees. Tu gardes la main sur tes donnees.</p>
+          <strong>Respect et durabilité</strong>
+          <p>Empreinte suivie, dark mode optimisé, ressources compressées. Tu gardes la main sur tes données.</p>
         </div>
         <div>
-          <strong>Accessibilite</strong>
-          <p>Contrastes eleves, zones cliquables genereuses, navigation vocale et textes alternatifs.</p>
+          <strong>Accessibilité</strong>
+          <p>Contrastes élevés, zones cliquables généreuses, navigation vocale et textes alternatifs.</p>
         </div>
         <div>
           <strong>Gamification responsable</strong>
-          <p>Badges relies a la progression, feedback instantane, classement optionnel.</p>
+          <p>Badges reliés à la progression, feedback instantané, classement optionnel.</p>
         </div>
       </footer>
     </div>

@@ -17,10 +17,10 @@ export default function UsernameForm({ onRun, assistantMessage }: UsernameFormPr
   const isReady = you.trim().length > 0 && opp.trim().length > 0;
 
   const headline = useMemo(() => {
-    if (!you && !opp) return "Un copilote IA pour ta preparation.";
-    if (you && !opp) return "Ton style est charge, qui affrontes-tu ?";
-    if (!you && opp) return "On cible ton adversaire, reste a savoir qui tu es.";
-    return "Prete pour une analyse augmentee ?";
+    if (!you && !opp) return "Un copilote IA pour ta préparation.";
+    if (you && !opp) return "Ton style est chargé, qui affrontes-tu ?";
+    if (!you && opp) return "On cible ton adversaire, reste à savoir qui tu es.";
+    return "Prêt·e pour une analyse augmentée ?";
   }, [you, opp]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -43,17 +43,17 @@ export default function UsernameForm({ onRun, assistantMessage }: UsernameFormPr
     <form className="fusion-card username-form" onSubmit={handleSubmit}>
       <header className="username-form__header">
         <div>
-          <p className="micro-tag">Scouting assiste</p>
+          <p className="micro-tag">Scouting assisté</p>
           <h2>{headline}</h2>
           <p className="username-form__subtitle">
-            Laisse l'IA croiser vos historiques, detecter les fuites et te proposer des reponses ciblees. Interface adaptative, data viz immersive, focus sur l'essentiel.
+            Laisse l'IA croiser tes historiques, détecter les fuites et te proposer des réponses ciblées. Interface adaptative, data viz immersive, focus sur l'essentiel.
           </p>
         </div>
         <div className="username-form__badge" role="status">
           <span aria-hidden>*</span>
           <div>
-            <strong>Analyse en temps reel</strong>
-            <p>Recalibree a chaque recherche, personnalisable.</p>
+            <strong>Analyse en temps réel</strong>
+            <p>Recalibrée à chaque recherche, personnalisable.</p>
           </div>
         </div>
       </header>
@@ -76,7 +76,7 @@ export default function UsernameForm({ onRun, assistantMessage }: UsernameFormPr
         </button>
 
         <label className="floating-label">
-          <span>Pseudo de l'adversaire</span>
+          <span>Pseudo de ton adversaire</span>
           <input
             id="opponent"
             value={opp}
@@ -132,7 +132,7 @@ export default function UsernameForm({ onRun, assistantMessage }: UsernameFormPr
           Lancer l'analyse IA
         </button>
         <p className="micro-copy">
-          Conforme WCAG 2.2 AA. Donnees publiques Chess.com, requetes Lichess a la demande.
+          Conforme WCAG 2.2 AA. Données publiques Chess.com, requêtes Lichess à la demande.
         </p>
       </div>
     </form>
