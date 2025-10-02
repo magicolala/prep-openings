@@ -501,218 +501,220 @@ export default function App() {
       data-state={activeChapter}
       data-header={headerCollapsed ? "collapsed" : "expanded"}
     >
-      {headerCollapsed ? (
-        <button
-          type="button"
-          className="experience-header__restore"
-          onClick={() => setHeaderCollapsed(false)}
-          aria-expanded="false"
-          aria-controls="experience-header"
-        >
-          <span aria-hidden>⌃</span>
-          <span>Afficher l'introduction</span>
-        </button>
-      ) : (
-        <header className="experience-header" id="experience-header">
-          <div className="experience-header__top">
-            <div className="experience-brand">
-              <span className="experience-brand__pulse" aria-hidden />
-              <div>
-                <p className="micro-tag">Prépa openings 2025</p>
-                <h1>Expérience augmentée d'analyse d'ouvertures</h1>
+      <div className="experience-shell__inner container">
+        {headerCollapsed ? (
+          <button
+            type="button"
+            className="experience-header__restore"
+            onClick={() => setHeaderCollapsed(false)}
+            aria-expanded="false"
+            aria-controls="experience-header"
+          >
+            <span aria-hidden>⌃</span>
+            <span>Afficher l'introduction</span>
+          </button>
+        ) : (
+          <header className="experience-header" id="experience-header">
+            <div className="experience-header__top">
+              <div className="experience-brand">
+                <span className="experience-brand__pulse" aria-hidden />
+                <div className="experience-brand__copy">
+                  <p className="micro-tag">Prépa openings 2025</p>
+                  <h1>Expérience augmentée d'analyse d'ouvertures</h1>
+                </div>
+              </div>
+              <div className="experience-header__controls">
+                <ExperienceToolbar
+                  onToggleVoice={toggleVoiceListening}
+                  voiceListening={voiceStatus === "listening"}
+                  voiceSupported={voiceSupported}
+                />
+                <button
+                  type="button"
+                  className="experience-header__toggle"
+                  onClick={() => setHeaderCollapsed(true)}
+                  aria-expanded="true"
+                  aria-controls="experience-header"
+                >
+                  <span aria-hidden>×</span>
+                  <span>Masquer l'introduction</span>
+                </button>
               </div>
             </div>
-            <div className="experience-header__controls">
-              <ExperienceToolbar
-                onToggleVoice={toggleVoiceListening}
-                voiceListening={voiceStatus === "listening"}
-                voiceSupported={voiceSupported}
-              />
-              <button
-                type="button"
-                className="experience-header__toggle"
-                onClick={() => setHeaderCollapsed(true)}
-                aria-expanded="true"
-                aria-controls="experience-header"
-              >
-                <span aria-hidden>×</span>
-                <span>Masquer l'introduction</span>
-              </button>
-            </div>
-          </div>
-          <JourneyNavigator
-            chapters={CHAPTERS}
-            activeId={activeChapter}
-            onSelect={handleChapterSelect}
-          />
-        </header>
-      )}
+            <JourneyNavigator
+              chapters={CHAPTERS}
+              activeId={activeChapter}
+              onSelect={handleChapterSelect}
+            />
+          </header>
+        )}
 
-      <main className="experience-body">
-        <section className="experience-story" aria-live="polite">
-          {(() => {
-            switch (activeChapter) {
-              case "scouting":
-                return (
-                  <article className="story-card">
-                    <h2>Scouting automatique</h2>
-                    <p>L'IA filtre tes parties récentes, détecte les signaux faibles et respecte la sobriété numérique.</p>
-                    <ul>
-                      <li>Fenêtre temporelle dynamique</li>
-                      <li>Historique de secours contrôlé</li>
-                      <li>Données publiques uniquement</li>
-                    </ul>
-                  </article>
-                );
-              case "analysis":
-                return (
-                  <article className="story-card">
-                    <h2>Navigation innovante</h2>
-                    <p>Scroll vertical pour les chapitres, horizontal pour zoomer dans la ligne. Halos et micro-animations.</p>
-                    <ul>
-                      <li>Micro-interactions clavier et tactile</li>
-                      <li>Visualisation abstraite au lieu de tableaux</li>
-                      <li>Personnalise animations et densité</li>
-                    </ul>
-                  </article>
-                );
-              case "prep":
-                return (
-                  <article className="story-card">
-                    <h2>Storytelling interactif</h2>
-                    <p>Chaque fuite devient un scénario : score adverse, ripostes, parties modèles et badges engagés.</p>
-                    <ul>
-                      <li>Badges gamifiés en temps réel</li>
-                      <li>Mode sombre optimisé</li>
-                      <li>Assistant vocal accessible</li>
-                    </ul>
-                  </article>
-                );
-              default:
-                return (
-                  <article className="story-card">
-                    <h2>Expérience personnalisée</h2>
-                    <p>Choisis ton ambiance, active l'assistant, allège la charge visuelle et garde le contrôle de tes données.</p>
-                    <ul>
-                      <li>Accessibilité WCAG 2.2</li>
-                      <li>Mode éco et assets légers</li>
-                      <li>Palette émotionnelle modulable</li>
-                    </ul>
-                  </article>
-                );
-            }
-          })()}
-        </section>
+        <main className="experience-body grid-12">
+          <section className="experience-story" aria-live="polite">
+            {(() => {
+              switch (activeChapter) {
+                case "scouting":
+                  return (
+                    <article className="story-card">
+                      <h2>Scouting automatique</h2>
+                      <p>L'IA filtre tes parties récentes, détecte les signaux faibles et respecte la sobriété numérique.</p>
+                      <ul>
+                        <li>Fenêtre temporelle dynamique</li>
+                        <li>Historique de secours contrôlé</li>
+                        <li>Données publiques uniquement</li>
+                      </ul>
+                    </article>
+                  );
+                case "analysis":
+                  return (
+                    <article className="story-card">
+                      <h2>Navigation innovante</h2>
+                      <p>Scroll vertical pour les chapitres, horizontal pour zoomer dans la ligne. Halos et micro-animations.</p>
+                      <ul>
+                        <li>Micro-interactions clavier et tactile</li>
+                        <li>Visualisation abstraite au lieu de tableaux</li>
+                        <li>Personnalise animations et densité</li>
+                      </ul>
+                    </article>
+                  );
+                case "prep":
+                  return (
+                    <article className="story-card">
+                      <h2>Storytelling interactif</h2>
+                      <p>Chaque fuite devient un scénario : score adverse, ripostes, parties modèles et badges engagés.</p>
+                      <ul>
+                        <li>Badges gamifiés en temps réel</li>
+                        <li>Mode sombre optimisé</li>
+                        <li>Assistant vocal accessible</li>
+                      </ul>
+                    </article>
+                  );
+                default:
+                  return (
+                    <article className="story-card">
+                      <h2>Expérience personnalisée</h2>
+                      <p>Choisis ton ambiance, active l'assistant, allège la charge visuelle et garde le contrôle de tes données.</p>
+                      <ul>
+                        <li>Accessibilité WCAG 2.2</li>
+                        <li>Mode éco et assets légers</li>
+                        <li>Palette émotionnelle modulable</li>
+                      </ul>
+                    </article>
+                  );
+              }
+            })()}
+          </section>
 
-        <section className="experience-workspace">
-          <UsernameForm onRun={run} assistantMessage={assistantMessage} />
-          {statusCards}
+          <section className="experience-workspace">
+            <UsernameForm onRun={run} assistantMessage={assistantMessage} />
+            {statusCards}
 
-          {tree && (
-            <>
-              <nav className="experience-breadcrumb" aria-label="Fil d'Ariane de l'analyse">
-                <ol>
-                  {breadcrumbItems.map((item) => (
-                    <li
-                      key={item.id}
-                      className={item.active ? "is-active" : ""}
-                      aria-current={item.active ? "step" : undefined}
-                    >
-                      <span aria-hidden>{item.icon}</span>
-                      <span>{item.label}</span>
+            {tree && (
+              <>
+                <nav className="experience-breadcrumb" aria-label="Fil d'Ariane de l'analyse">
+                  <ol>
+                    {breadcrumbItems.map((item) => (
+                      <li
+                        key={item.id}
+                        className={item.active ? "is-active" : ""}
+                        aria-current={item.active ? "step" : undefined}
+                      >
+                        <span aria-hidden>{item.icon}</span>
+                        <span>{item.label}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </nav>
+
+                <div className="line-board" aria-live="polite">
+                  <OpeningTreeColumn
+                    color="white"
+                    nodes={tree.opponent.byColor.white}
+                    activeNodeId={selectedNode?.id ?? null}
+                    onSelect={handleSelectNode}
+                  />
+                  <OpeningTreeColumn
+                    color="black"
+                    nodes={tree.opponent.byColor.black}
+                    activeNodeId={selectedNode?.id ?? null}
+                    onSelect={handleSelectNode}
+                  />
+                </div>
+              </>
+            )}
+
+            {prepSheet && selectedNode && <PrepSheetView sheet={prepSheet} node={selectedNode} />}
+          </section>
+
+          <aside className="experience-aside">
+            <nav className="side-menu" aria-label="Navigation secondaire">
+              <p className="side-menu__title">Chapitres</p>
+              <ul className="side-menu__list">
+                {CHAPTERS.map((chapter) => {
+                  const isActive = chapter.id === activeChapter;
+                  return (
+                    <li key={chapter.id}>
+                      <button
+                        type="button"
+                        className={`side-menu__item${isActive ? " is-active" : ""}`}
+                        onClick={() => handleChapterSelect(chapter.id)}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        {chapter.icon && (
+                          <span className="side-menu__icon" aria-hidden>
+                            {chapter.icon}
+                          </span>
+                        )}
+                        <span>{chapter.label}</span>
+                      </button>
                     </li>
-                  ))}
-                </ol>
-              </nav>
+                  );
+                })}
+              </ul>
+            </nav>
 
-              <div className="line-board" aria-live="polite">
-                <OpeningTreeColumn
-                  color="white"
-                  nodes={tree.opponent.byColor.white}
-                  activeNodeId={selectedNode?.id ?? null}
-                  onSelect={handleSelectNode}
-                />
-                <OpeningTreeColumn
-                  color="black"
-                  nodes={tree.opponent.byColor.black}
-                  activeNodeId={selectedNode?.id ?? null}
-                  onSelect={handleSelectNode}
-                />
-              </div>
-            </>
-          )}
+            <VoiceInterface
+              status={voiceStatus}
+              transcript={voiceTranscript}
+              assistantMessage={voiceResponse}
+              suggestions={voiceSuggestions}
+              onSuggestion={(command) => {
+                void processVoice(command);
+              }}
+              error={voiceStatus === "error" ? voiceResponse : null}
+            />
 
-          {prepSheet && selectedNode && <PrepSheetView sheet={prepSheet} node={selectedNode} />}
-        </section>
+            <AchievementPanel
+              leaksFound={leaksDetected}
+              nodesExplored={nodesExplored}
+              ecoMode={ecoMode}
+              voiceEnabled={voiceEnabled}
+            />
 
-        <aside className="experience-aside">
-          <nav className="side-menu" aria-label="Navigation secondaire">
-            <p className="side-menu__title">Chapitres</p>
-            <ul className="side-menu__list">
-              {CHAPTERS.map((chapter) => {
-                const isActive = chapter.id === activeChapter;
-                return (
-                  <li key={chapter.id}>
-                    <button
-                      type="button"
-                      className={`side-menu__item${isActive ? " is-active" : ""}`}
-                      onClick={() => handleChapterSelect(chapter.id)}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      {chapter.icon && (
-                        <span className="side-menu__icon" aria-hidden>
-                          {chapter.icon}
-                        </span>
-                      )}
-                      <span>{chapter.label}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
+            {debugLines.length > 0 && (
+              <details className="debug-block" open={debugOpen} onToggle={(event) => setDebugOpen((event.target as HTMLDetailsElement).open)}>
+                <summary>Debug</summary>
+                <pre>{debugLines.join("\n")}</pre>
+              </details>
+            )}
+          </aside>
+        </main>
 
-          <VoiceInterface
-            status={voiceStatus}
-            transcript={voiceTranscript}
-            assistantMessage={voiceResponse}
-            suggestions={voiceSuggestions}
-            onSuggestion={(command) => {
-              void processVoice(command);
-            }}
-            error={voiceStatus === "error" ? voiceResponse : null}
-          />
-
-          <AchievementPanel
-            leaksFound={leaksDetected}
-            nodesExplored={nodesExplored}
-            ecoMode={ecoMode}
-            voiceEnabled={voiceEnabled}
-          />
-
-          {debugLines.length > 0 && (
-            <details className="debug-block" open={debugOpen} onToggle={(event) => setDebugOpen((event.target as HTMLDetailsElement).open)}>
-              <summary>Debug</summary>
-              <pre>{debugLines.join("\n")}</pre>
-            </details>
-          )}
-        </aside>
-      </main>
-
-      <footer className="experience-footer">
-        <div>
-          <strong>Respect et durabilité</strong>
-          <p>Empreinte suivie, dark mode optimisé, ressources compressées. Tu gardes la main sur tes données.</p>
-        </div>
-        <div>
-          <strong>Accessibilité</strong>
-          <p>Contrastes élevés, zones cliquables généreuses, navigation vocale et textes alternatifs.</p>
-        </div>
-        <div>
-          <strong>Gamification responsable</strong>
-          <p>Badges reliés à la progression, feedback instantané, classement optionnel.</p>
-        </div>
-      </footer>
+        <footer className="experience-footer">
+          <div>
+            <strong>Respect et durabilité</strong>
+            <p>Empreinte suivie, dark mode optimisé, ressources compressées. Tu gardes la main sur tes données.</p>
+          </div>
+          <div>
+            <strong>Accessibilité</strong>
+            <p>Contrastes élevés, zones cliquables généreuses, navigation vocale et textes alternatifs.</p>
+          </div>
+          <div>
+            <strong>Gamification responsable</strong>
+            <p>Badges reliés à la progression, feedback instantané, classement optionnel.</p>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
