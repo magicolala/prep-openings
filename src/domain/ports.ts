@@ -1,4 +1,13 @@
-import type { Player, ChessComGame, ExplorerPositionInfo } from "./models";
+import type {
+  Player,
+  ChessComGame,
+  ExplorerPositionInfo,
+  PrepSuggestion,
+  OpeningSummary,
+  OpeningTreeResult,
+  OpeningFenNode,
+  PrepSheet,
+} from "./models";
 
 export interface IClock {
   now(): Date;
@@ -20,7 +29,30 @@ export interface IOpeningAnalyzer {
     yourGames: ChessComGame[];
     oppGames: ChessComGame[];
     explorer: ILichessExplorerService;
-  }): Promise<import("./models").PrepSuggestion[]>;
+  }): Promise<PrepSuggestion[]>;
+
+  findSharedOpenings(params: {
+    yourGames: ChessComGame[];
+    oppGames: ChessComGame[];
+    minCommonPlies?: number;
+    maxPlies?: number;
+  }): OpeningSummary[];
+
+  buildOpeningTree(params: {
+    you: Player;
+    opponent: Player;
+    yourGames: ChessComGame[];
+    oppGames: ChessComGame[];
+    maxPlies?: number;
+    plyWindow?: [number, number];
+  }): OpeningTreeResult;
+
+  createPrepSheet(params: {
+    node: OpeningFenNode;
+    opponentTree: OpeningTreeResult["opponent"];
+    yourIndex: OpeningTreeResult["you"]["index"];
+    explorer: ILichessExplorerService;
+    punishmentsPerLeak?: number;
+    maxModelGames?: number;
+  }): Promise<PrepSheet>;
 }
-
-

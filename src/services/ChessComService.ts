@@ -58,6 +58,7 @@ export class ChessComService implements IChessComService {
             time_control: g.time_control,
             end_time: g.end_time,
             rated: g.rated,
+            eco: typeof g.eco === "string" ? g.eco : g.eco?.url,
             white: { username: g.white?.username?.toLowerCase?.() ?? "", result: g.white?.result },
             black: { username: g.black?.username?.toLowerCase?.() ?? "", result: g.black?.result },
           });
@@ -68,5 +69,3 @@ export class ChessComService implements IChessComService {
     return results;
   }
 }
-
-

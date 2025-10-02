@@ -1,1 +1,6 @@
-import type { IClock } from "../domain/ports";export class SystemClock implements IClock {  now(): Date {    return new Date();  }}
+import type { IClock } from '../domain/ports';
+export class SystemClock implements IClock {
+  now(): Date {
+    return new Date();
+  }
+}

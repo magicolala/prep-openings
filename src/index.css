@@ -5,6 +5,7 @@ body {
   color: var(--bs-body-color, #212529);
 }
 
-code, pre {
+code,
+pre {
   font-family: var(--bs-font-monospace, SFMono-Regular, Menlo, monospace);
 }

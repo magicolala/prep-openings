@@ -1,4 +1,4 @@
-﻿import type { ILichessExplorerService } from "../domain/ports";
+import type { ILichessExplorerService } from "../domain/ports";
 import type { ExplorerPositionInfo } from "../domain/models";
 import { Chess } from "chess.js";
 
@@ -42,7 +42,10 @@ export class LichessExplorerService implements ILichessExplorerService {
 
   private enqueueRequest<T>(task: () => Promise<T>): Promise<T> {
     const run = this.requestQueue.then(task, task);
-    this.requestQueue = run.then(() => undefined, () => undefined);
+    this.requestQueue = run.then(
+      () => undefined,
+      () => undefined,
+    );
     return run;
   }
 
@@ -61,10 +64,13 @@ export class LichessExplorerService implements ILichessExplorerService {
 
       if (response.status === 429) {
         const retryAfterHeader = Number(response.headers.get("Retry-After"));
-        const cooldown = Math.max(60000, Number.isFinite(retryAfterHeader) ? retryAfterHeader * 1000 : 60000);
+        const cooldown = Math.max(
+          60000,
+          Number.isFinite(retryAfterHeader) ? retryAfterHeader * 1000 : 60000,
+        );
         this.nextAllowedCallAt = Date.now() + cooldown;
         attempt += 1;
-        lastError = new Error("Lichess explorer a répondu 429. Pause d'une minute avant nouvel essai.");
+        lastError = new Error("Lichess explorer a repondu 429. Pause d'une minute avant nouvel essai.");
         continue;
       }
 
@@ -76,7 +82,7 @@ export class LichessExplorerService implements ILichessExplorerService {
       return response.json();
     }
 
-    throw lastError ?? new Error("Lichess explorer rate limit dépassée à plusieurs reprises.");
+    throw lastError ?? new Error("Lichess explorer rate limit depassee a plusieurs reprises.");
   }
 
   private sanToUciMoves(sanLine: string[]): string[] {
@@ -92,9 +98,16 @@ export class LichessExplorerService implements ILichessExplorerService {
     return uciMoves;
   }
 
-  async getPositionInfo(sanLine: string[], variant: "standard" = "standard"): Promise<ExplorerPositionInfo> {
+  async getPositionInfo(
+    sanLine: string[],
+    variant: "standard" = "standard",
+  ): Promise<ExplorerPositionInfo> {
     const uciMoves = this.sanToUciMoves(sanLine);
-    const params = new URLSearchParams({ variant, speeds: "blitz,rapid,classical", ratings: "1800,2000,2200" });
+    const params = new URLSearchParams({
+      variant,
+      speeds: "blitz,rapid,classical",
+      ratings: "1800,2000,2200",
+    });
     if (uciMoves.length) params.set("play", uciMoves.join(","));
     const url = `${this.base}?${params.toString()}`;
     const cacheKey = `lichess:pos:${variant}:${uciMoves.join(",")}`;
@@ -114,8 +127,19 @@ export class LichessExplorerService implements ILichessExplorerService {
         total: (m.white ?? 0) + (m.draws ?? 0) + (m.black ?? 0),
         averageRating: m.averageRating,
       }));
+      const recentGames = (data.recentGames ?? []).map((g: any) => ({
+        id: g.id,
+        winner: g.winner,
+        speed: g.speed,
+        mode: g.mode,
+        white: g.white,
+        black: g.black,
+        year: g.year,
+        month: g.month,
+        uci: g.uci,
+      }));
       const opening = data.opening ? { name: data.opening.name, eco: data.opening.eco } : undefined;
-      const result: ExplorerPositionInfo = { opening, moves };
+      const result: ExplorerPositionInfo = { opening, moves, recentGames };
       this.writeCache(cacheKey, result);
       return result;
     });
