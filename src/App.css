@@ -31,6 +31,53 @@
   gap: 1.25rem;
 }
 
+.experience-header__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.experience-header__toggle,
+.experience-header__restore {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-glass);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.experience-header__toggle:hover,
+.experience-header__toggle:focus-visible,
+.experience-header__restore:hover,
+.experience-header__restore:focus-visible {
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  border-color: var(--accent-400);
+  box-shadow: 0 10px 30px rgba(18, 21, 31, 0.16);
+}
+
+.experience-header__toggle span[aria-hidden],
+.experience-header__restore span[aria-hidden] {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.experience-header__restore {
+  position: sticky;
+  top: clamp(1rem, 2vw, 2.25rem);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-soft);
+  color: var(--text-primary);
+  z-index: 9;
+}
+
 .experience-brand {
   display: flex;
   align-items: center;

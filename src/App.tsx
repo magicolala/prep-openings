@@ -72,6 +72,7 @@ export default function App() {
   const [manualChapter, setManualChapter] = useState<string | null>(null);
   const [lastRun, setLastRun] = useState<{ you: string; opponent: string } | null>(null);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
 
   const {
     appearance,
@@ -495,28 +496,57 @@ export default function App() {
   );
 
   return (
-    <div className="experience-shell" data-state={activeChapter}>
-      <header className="experience-header">
-        <div className="experience-header__top">
-          <div className="experience-brand">
-            <span className="experience-brand__pulse" aria-hidden />
-            <div>
-              <p className="micro-tag">Prep openings 2025</p>
-              <h1>Experience augmentee d'analyse d'ouvertures</h1>
+    <div
+      className="experience-shell"
+      data-state={activeChapter}
+      data-header={headerCollapsed ? "collapsed" : "expanded"}
+    >
+      {headerCollapsed ? (
+        <button
+          type="button"
+          className="experience-header__restore"
+          onClick={() => setHeaderCollapsed(false)}
+          aria-expanded="false"
+          aria-controls="experience-header"
+        >
+          <span aria-hidden>⌃</span>
+          <span>Afficher l'introduction</span>
+        </button>
+      ) : (
+        <header className="experience-header" id="experience-header">
+          <div className="experience-header__top">
+            <div className="experience-brand">
+              <span className="experience-brand__pulse" aria-hidden />
+              <div>
+                <p className="micro-tag">Prep openings 2025</p>
+                <h1>Experience augmentee d'analyse d'ouvertures</h1>
+              </div>
+            </div>
+            <div className="experience-header__controls">
+              <ExperienceToolbar
+                onToggleVoice={toggleVoiceListening}
+                voiceListening={voiceStatus === "listening"}
+                voiceSupported={voiceSupported}
+              />
+              <button
+                type="button"
+                className="experience-header__toggle"
+                onClick={() => setHeaderCollapsed(true)}
+                aria-expanded="true"
+                aria-controls="experience-header"
+              >
+                <span aria-hidden>×</span>
+                <span>Masquer l'introduction</span>
+              </button>
             </div>
           </div>
-          <ExperienceToolbar
-            onToggleVoice={toggleVoiceListening}
-            voiceListening={voiceStatus === "listening"}
-            voiceSupported={voiceSupported}
+          <JourneyNavigator
+            chapters={CHAPTERS}
+            activeId={activeChapter}
+            onSelect={handleChapterSelect}
           />
-        </div>
-        <JourneyNavigator
-          chapters={CHAPTERS}
-          activeId={activeChapter}
-          onSelect={handleChapterSelect}
-        />
-      </header>
+        </header>
+      )}
 
       <main className="experience-body">
         <section className="experience-story" aria-live="polite">
