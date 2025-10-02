@@ -1,4 +1,4 @@
-export type VoiceStatus = "idle" | "listening" | "processing" | "error";
+ï»¿export type VoiceStatus = "idle" | "listening" | "processing" | "error";
 
 interface VoiceInterfaceProps {
   status: VoiceStatus;
@@ -23,21 +23,21 @@ export function VoiceInterface({ status, transcript, assistantMessage, suggestio
 
       <div className="voice-interface__body">
         <p className="voice-interface__status">
-          {status === "idle" && "Assistant prêt. Lance-toi."}
-          {status === "listening" && "Je t'écoute..."}
-          {status === "processing" && "Je réfléchis à la meilleure action."}
+          {status === "idle" && "Assistant pret. Lance-toi."}
+          {status === "listening" && "Je t'ecoute..."}
+          {status === "processing" && "Je reflechis a la meilleure action."}
           {status === "error" && (error ?? "Je n'ai pas compris, retente.")}
         </p>
 
         {transcript && (
-          <div className="voice-interface__transcript" aria-label="Dernière commande vocale">
+          <div className="voice-interface__transcript" aria-label="Derniere commande vocale">
             <span className="voice-interface__pill">Tu</span>
             <p>{transcript}</p>
           </div>
         )}
 
         {assistantMessage && (
-          <div className="voice-interface__response" aria-label="Réponse de l'assistant">
+          <div className="voice-interface__response" aria-label="Reponse de l'assistant">
             <span className="voice-interface__pill voice-interface__pill--ai">IA</span>
             <p>{assistantMessage}</p>
           </div>

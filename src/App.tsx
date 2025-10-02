@@ -3,7 +3,7 @@ import UsernameForm from "./ui/components/UsernameForm";
 import OpeningTreeColumn from "./ui/components/OpeningTreeColumn";
 import PrepSheetView from "./ui/components/PrepSheetView";
 import { ExperienceToolbar } from "./ui/components/ExperienceToolbar";
-import { VoiceInterface, type VoiceStatus } from "./ui/components/VoiceInterface";
+import { VoiceInterface } from "./ui/components/VoiceInterface";
 import { JourneyNavigator, type JourneyChapter } from "./ui/components/JourneyNavigator";
 import { AchievementPanel } from "./ui/components/AchievementPanel";
 import { useVoiceAssistant } from "./ui/hooks/useVoiceAssistant";
@@ -17,37 +17,38 @@ const CHAPTERS: JourneyChapter[] = [
   {
     id: "context",
     label: "Brief",
-    title: "Prï¿½pare l'expï¿½rience",
-    summary: "Personnalise l'ambiance, choisis ton thï¿½me, active le mode ï¿½co pour une empreinte lï¿½gï¿½re.",
+    title: "Prepare l'experience",
+    summary: "Personnalise l'ambiance, choisis ton theme, active le mode eco pour une empreinte legere.",
   },
   {
     id: "scouting",
     label: "Collecte",
-    title: "Scanning en temps rï¿½el",
-    summary: "Rï¿½cupï¿½ration intelligente des parties rï¿½centes, IA qui filtre les signaux faibles.",
+    title: "Scanning en temps reel",
+    summary: "Recuperation intelligente des parties recentes, IA qui filtre les signaux faibles.",
   },
   {
     id: "analysis",
     label: "Analyse",
     title: "Cartographie des ouvertures",
-    summary: "Visualisation abstraite : intensitï¿½, halo, moves clï¿½s. Navigation hybride scroll + gestures.",
+    summary: "Visualisation abstraite, halos de danger, navigation hybride scroll et gestes.",
   },
   {
     id: "prep",
     label: "Plan",
-    title: "Prep sheet augmentï¿½",
-    summary: "Fuites dï¿½tectï¿½es, rï¿½ponses recommandï¿½es, storytelling interactif pour mï¿½moriser.",
+    title: "Prep sheet augmente",
+    summary: "Fuites detectees, reponses recommandees, storytelling interactif pour memoriser.",
   },
 ];
 
 const ACCENT_PRESETS = [
   { keywords: ["violet", "pourpre", "indigo"], hue: 248, label: "violet" },
   { keywords: ["corail", "rose", "magenta"], hue: 18, label: "corail" },
-  { keywords: ["emeraude", "vert", "jade"], hue: 150, label: "émeraude" },
+  { keywords: ["emeraude", "vert", "jade"], hue: 150, label: "emeraude" },
   { keywords: ["soleil", "or", "gold"], hue: 46, label: "solaire" },
-  { keywords: ["ocean", "bleu", "azur"], hue: 205, label: "océan" },
+  { keywords: ["ocean", "bleu", "azur"], hue: 205, label: "ocean" },
 ] as const;
 
+const DEFAULT_SUGGESTIONS = ["mode sombre", "chapitre analyse", "relance analyse"];
 
 export default function App() {
   const chessCom = useMemo(() => new ChessComService(), []);
@@ -65,6 +66,8 @@ export default function App() {
   const [assistantMessage, setAssistantMessage] = useState<string | null>(null);
   const [exploredNodes, setExploredNodes] = useState<Set<string>>(() => new Set());
   const [manualChapter, setManualChapter] = useState<string | null>(null);
+  const [lastRun, setLastRun] = useState<{ you: string; opponent: string } | null>(null);
+  const [debugOpen, setDebugOpen] = useState(false);
 
   const {
     appearance,
@@ -81,28 +84,300 @@ export default function App() {
     toggleVoice,
   } = useExperiencePreferences();
 
-  const [lastRun, setLastRun] = useState<{ you: string; opponent: string } | null>(null);
-  const [debugOpen, setDebugOpen] = useState(false);
+  const run = useCallback(
+    async (youRaw: string, opponentRaw: string) => {
+      const you = youRaw.trim();
+      const opponent = opponentRaw.trim();
+      setError(null);
+      setPrepError(null);
+      setTree(null);
+      setSelectedNode(null);
+      setPrepSheet(null);
+      setDebugLines([]);
+      setAssistantMessage(null);
+      if (!you || !opponent) {
+        setError("Renseigne les deux pseudos pour lancer l'analyse.");
+        return;
+      }
+      setLoading(true);
+      try {
+        const [yourGames, oppGames] = await Promise.all([
+          chessCom.getRecentGames(you, 4),
+          chessCom.getRecentGames(opponent, 4),
+        ]);
+        const openingTree = analyzer.buildOpeningTree({
+          you: { username: you },
+          opponent: { username: opponent },
+          yourGames,
+          oppGames,
+          plyWindow: [8, 12],
+          maxPlies: 20,
+        });
+
+        const debug: string[] = [];
+        debug.push(`[debug] ${you} jeux recuperes: ${yourGames.length}`);
+        debug.push(`[debug] ${opponent} jeux recuperes: ${oppGames.length}`);
+        debug.push(
+          `[debug] noeuds adversaire blancs: ${openingTree.opponent.byColor.white.length}, noirs: ${openingTree.opponent.byColor.black.length}`
+        );
+        debug.push(
+          `[debug] noeuds perso blancs: ${openingTree.you.byColor.white.length}, noirs: ${openingTree.you.byColor.black.length}`
+        );
+        if (openingTree.meta?.cutoffEpochMs) {
+          const cutoffIso = new Date(openingTree.meta.cutoffEpochMs).toISOString().split("T")[0];
+          debug.push(`[debug] fenetre recence: depuis ${cutoffIso}`);
+        }
+        if (openingTree.meta?.opponentUsedFallback) {
+          debug.push(`[debug] ${opponent} sans volume recent -> fallback historique complet`);
+        }
+        if (openingTree.meta?.youUsedFallback) {
+          debug.push(`[debug] ${you} sans volume recent -> fallback historique complet`);
+        }
+        if (openingTree.meta?.opponentRelaxedWindow) {
+          const scope = openingTree.meta?.opponentCutoffApplied ? "<4 mois" : "historique complet";
+          debug.push(`[debug] ${opponent} fenetre coups etendue (4-16 base ${scope})`);
+        }
+        if (openingTree.meta?.youRelaxedWindow) {
+          const scope = openingTree.meta?.youCutoffApplied ? "<4 mois" : "historique complet";
+          debug.push(`[debug] ${you} fenetre coups etendue (4-16 base ${scope})`);
+        }
+        setDebugLines(debug);
+
+        setTree(openingTree);
+        setLastRun({ you, opponent });
+        setExploredNodes(new Set());
+        setDebugOpen(false);
+        const opponentNodeCount = openingTree.opponent.byColor.white.length + openingTree.opponent.byColor.black.length;
+        if (opponentNodeCount === 0) {
+          const baseReason = openingTree.meta?.opponentCutoffApplied
+            ? "Pas assez de parties recentes pour dessiner un arbre"
+            : "Aucune partie exploitable meme en remontant l'historique";
+          const adjustments: string[] = [];
+          if (openingTree.meta?.opponentRelaxedWindow) adjustments.push("fenetre coups 4-16");
+          if (openingTree.meta?.opponentUsedFallback) adjustments.push("historique complet");
+          const detailSuffix = adjustments.length ? ` Ajustements: ${adjustments.join(", ")}.` : "";
+          setPrepError(`${baseReason}. (opp games: ${oppGames.length}, opp nodes: ${opponentNodeCount}).${detailSuffix}`);
+        }
+      } catch (e: unknown) {
+        console.error("[App.run] failed", e);
+        setDebugLines((lines) => [...lines, `[debug] run error: ${String(e)}`]);
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [analyzer, chessCom]
+  );
+
+  const handleSelectNode = useCallback(
+    async (node: OpeningFenNode) => {
+      if (!tree) return;
+      setPrepError(null);
+      setSelectedNode(node);
+      setPrepSheet(null);
+      setPrepLoading(true);
+      setExploredNodes((prev) => {
+        const next = new Set(prev);
+        next.add(node.id);
+        return next;
+      });
+      try {
+        const sheet = await analyzer.createPrepSheet({
+          node,
+          opponentTree: tree.opponent,
+          yourIndex: tree.you.index,
+          explorer,
+        });
+        if (!sheet.leaks.length) {
+          setPrepError("Pas de fuite flagrante sur cette ligne, continue la preparation.");
+        }
+        setPrepSheet(sheet);
+      } catch (e: unknown) {
+        console.error("[App.handleSelectNode] failed", e);
+        setDebugLines((lines) => [...lines, `[debug] prep fetch error: ${String(e)}`]);
+        setPrepError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setPrepLoading(false);
+      }
+    },
+    [analyzer, explorer, tree]
+  );
+
+  const handleVoiceCommand = useCallback(
+    async (utterance: string) => {
+      const normalized = utterance.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const sanitized = normalized.replace(/[^a-z0-9 ]/g, " ");
+      const includes = (segment: string) => sanitized.includes(segment);
+      const includesAny = (...segments: string[]) => segments.some((segment) => includes(segment));
+      const respond = (message: string) => {
+        setAssistantMessage(message);
+        return message;
+      };
+
+      if (!sanitized.trim()) {
+        return respond("Commande vide. Essaie mode sombre ou chapitre analyse.");
+      }
+
+      if (includesAny("mode sombre", "mode nuit", "dark")) {
+        if (appearance !== "dark") setAppearance("dark");
+        return respond("Theme nuit active.");
+      }
+
+      if (includesAny("mode clair", "mode jour", "light")) {
+        if (appearance !== "light") setAppearance("light");
+        return respond("Theme jour active.");
+      }
+
+      if (includesAny("mode auto", "automatique")) {
+        if (appearance !== "auto") setAppearance("auto");
+        return respond("Theme auto synchronise.");
+      }
+
+      if (includes("mode eco")) {
+        const wantsDisable = includes("desactive") || includes("retire") || includes("coupe");
+        if (wantsDisable) {
+          if (ecoMode) toggleEcoMode();
+          return respond("Mode eco desactive.");
+        }
+        if (!ecoMode) toggleEcoMode();
+        return respond("Mode eco active.");
+      }
+
+      if (includesAny("motion douce", "animation douce", "calme", "slow")) {
+        if (motion !== "calm") setMotion("calm");
+        return respond("Animations adoucies.");
+      }
+
+      if (includesAny("motion vive", "animation rapide", "dynamique")) {
+        if (motion !== "dynamic") setMotion("dynamic");
+        return respond("Animations dynamiques activees.");
+      }
+
+      if (includesAny("layout compact", "densite compacte", "compact", "dense")) {
+        if (density !== "compact") setDensity("compact");
+        return respond("Layout compact active.");
+      }
+
+      if (includesAny("layout ample", "densite confortable", "confortable", "large")) {
+        if (density !== "comfortable") setDensity("comfortable");
+        return respond("Layout ample active.");
+      }
+
+      if (includesAny("couleur", "accent")) {
+        for (const preset of ACCENT_PRESETS) {
+          if (preset.keywords.some((keyword) => includes(keyword))) {
+            if (accentHue !== preset.hue) setAccentHue(preset.hue);
+            return respond(`Accent ${preset.label} active.`);
+          }
+        }
+        return respond("Dis une couleur: violet, corail, emeraude, solaire ou ocean.");
+      }
+
+      if (includes("chapitre") || includes("section")) {
+        if (includesAny("brief", "contexte")) {
+          setManualChapter("context");
+          return respond("Chapitre brief affiche.");
+        }
+        if (includesAny("collecte", "scout")) {
+          setManualChapter("scouting");
+          return respond("Chapitre collecte active.");
+        }
+        if (includes("analyse")) {
+          setManualChapter("analysis");
+          return respond("Chapitre analyse active.");
+        }
+        if (includesAny("plan", "prep", "preparation")) {
+          setManualChapter("prep");
+          return respond("Chapitre plan ouvert.");
+        }
+        return respond("Chapitre non reconnu. Essaie plan, analyse ou collecte.");
+      }
+
+      if (includesAny("relance", "relancer", "relance analyse", "rejoue")) {
+        if (lastRun) {
+          await run(lastRun.you, lastRun.opponent);
+          return respond(`Je relance l'analyse pour ${lastRun.you} contre ${lastRun.opponent}.`);
+        }
+        return respond("Aucune analyse memorisee.");
+      }
+
+      if (includes("debug")) {
+        const wantsClose = includes("ferme") || includes("masque") || includes("cache");
+        if (wantsClose) {
+          setDebugOpen(false);
+          return respond("Console debug masquee.");
+        }
+        setDebugOpen(true);
+        return respond("Console debug affichee.");
+      }
+
+      if (includes("assistant vocal") && includesAny("desactive", "coupe", "stop")) {
+        if (voiceEnabled) toggleVoice();
+        return respond("Assistant vocal desactive.");
+      }
+
+      if (includes("assistant vocal") && includesAny("active", "demarre", "lance")) {
+        if (!voiceEnabled) toggleVoice();
+        return respond("Assistant vocal active.");
+      }
+
+      if (includes("stop")) {
+        return respond("Micro coupe. Appuie sur le bouton pour reprendre.");
+      }
+
+      return respond("Commande non reconnue. Essaie mode sombre ou chapitre analyse.");
+    },
+    [accentHue, appearance, density, ecoMode, lastRun, motion, run, setAccentHue, setAppearance, setDensity, setMotion, toggleEcoMode, toggleVoice, voiceEnabled]
+  );
+
+  const {
+    supported: voiceSupported,
+    status: voiceStatus,
+    transcript: voiceTranscript,
+    response: voiceResponse,
+    start: startVoice,
+    stop: stopVoice,
+    reset: resetVoice,
+    process: processVoice,
+  } = useVoiceAssistant({
+    enabled: voiceEnabled,
+    onCommand: handleVoiceCommand,
+    onError: (message) => setAssistantMessage((prev) => prev ?? message),
+  });
+
+  useEffect(() => {
+    if (!voiceEnabled) {
+      stopVoice();
+    }
+  }, [voiceEnabled, stopVoice]);
 
   useEffect(() => {
     if (loading) {
-      setAssistantMessage("Je rï¿½cupï¿½re vos parties en prioritï¿½ pour un scouting pertinent.");
+      setAssistantMessage("Je collecte les parties, respire.");
       return;
     }
     if (prepLoading) {
-      setAssistantMessage("Je scrute Lichess Explorer pour trouver des patterns exploitables.");
+      setAssistantMessage("Je cherche des modeles Lichess pertinents.");
       return;
     }
     if (tree && !selectedNode) {
-      setAssistantMessage("Explore les lignes dï¿½tectï¿½es et clique pour gï¿½nï¿½rer ta prep sheet.");
+      setAssistantMessage("Choisis une ligne pour creer ta prep sheet.");
       return;
     }
     if (prepSheet && prepSheet.leaks.length === 0) {
-      setAssistantMessage("Cette ligne semble saine. Continue ï¿½ scroller ou teste une autre entrï¿½e.");
+      setAssistantMessage("Cette ligne semble solide, explore d'autres pistes.");
+      return;
+    }
+    if (voiceStatus === "listening") {
+      setAssistantMessage("Je t'ecoute, demande un mode ou un chapitre.");
+      return;
+    }
+    if (voiceStatus === "processing") {
+      setAssistantMessage("Je traite ta commande vocale.");
       return;
     }
     setAssistantMessage(null);
-  }, [loading, prepLoading, tree, selectedNode, prepSheet]);
+  }, [loading, prepLoading, tree, selectedNode, prepSheet, voiceStatus]);
 
   const computedChapter = useMemo(() => {
     if (prepSheet || prepLoading) return "prep";
@@ -120,6 +395,7 @@ export default function App() {
       setManualChapter(null);
     }
   }, [computedChapter, manualChapter]);
+
   useEffect(() => {
     if (!manualChapter) return;
     const timer = window.setTimeout(() => setManualChapter(null), 8000);
@@ -129,146 +405,38 @@ export default function App() {
   const leaksDetected = prepSheet?.leaks.length ?? 0;
   const nodesExplored = exploredNodes.size;
 
-  const run = useCallback(async (youRaw: string, opponentRaw: string) => {
-    const you = youRaw.trim();
-    const opponent = opponentRaw.trim();
-    setError(null);
-    setPrepError(null);
-    setTree(null);
-    setSelectedNode(null);
-    setPrepSheet(null);
-    setDebugLines([]);
-    if (!you || !opponent) {
-      setError("Renseigne les deux pseudos pour lancer l'analyse.");
-      return;
+  const voiceSuggestions = useMemo(() => {
+    const base = [...DEFAULT_SUGGESTIONS];
+    if (!voiceEnabled) base[0] = "active assistant vocal";
+    if (voiceEnabled && voiceStatus === "listening") base[0] = "stop";
+    if (!lastRun) base[2] = "mode clair";
+    return base;
+  }, [lastRun, voiceEnabled, voiceStatus]);
+
+  const toggleVoiceListening = useCallback(() => {
+    if (!voiceSupported || !voiceEnabled) return;
+    if (voiceStatus === "listening") {
+      stopVoice();
+    } else {
+      resetVoice();
+      startVoice();
     }
-    setLoading(true);
-    try {
-      const [yourGames, oppGames] = await Promise.all([
-        chessCom.getRecentGames(you, 4),
-        chessCom.getRecentGames(opponent, 4),
-      ]);
-      const openingTree = analyzer.buildOpeningTree({
-        you: { username: you },
-        opponent: { username: opponent },
-        yourGames,
-        oppGames,
-        plyWindow: [8, 12],
-        maxPlies: 20,
-      });
-
-      const debug: string[] = [];
-      debug.push(`[debug] ${you} games rï¿½cupï¿½rï¿½es: ${yourGames.length}`);
-      debug.push(`[debug] ${opponent} games rï¿½cupï¿½rï¿½es: ${oppGames.length}`);
-      debug.push(
-        `[debug] Nï¿½uds adversaire - blancs: ${openingTree.opponent.byColor.white.length}, noirs: ${openingTree.opponent.byColor.black.length}`
-      );
-      debug.push(
-        `[debug] Nï¿½uds perso - blancs: ${openingTree.you.byColor.white.length}, noirs: ${openingTree.you.byColor.black.length}`
-      );
-      if (openingTree.meta?.cutoffEpochMs) {
-        const cutoffIso = new Date(openingTree.meta.cutoffEpochMs).toISOString().split("T")[0];
-        debug.push(`[debug] Fenï¿½tre recentielle cible: depuis ${cutoffIso}`);
-      }
-      if (openingTree.meta?.opponentUsedFallback) {
-        debug.push(`[debug] ${opponent} sans volume <4 mois -> fallback historique complet`);
-      }
-      if (openingTree.meta?.youUsedFallback) {
-        debug.push(`[debug] ${you} sans volume <4 mois -> fallback historique complet`);
-      }
-      if (openingTree.meta?.opponentRelaxedWindow) {
-        const scope = openingTree.meta?.opponentCutoffApplied ? "<4 mois" : "historique complet";
-        debug.push(`[debug] ${opponent} fenï¿½tre coups ï¿½tendue (4-16, base ${scope})`);
-      }
-      if (openingTree.meta?.youRelaxedWindow) {
-        const scope = openingTree.meta?.youCutoffApplied ? "<4 mois" : "historique complet";
-        debug.push(`[debug] ${you} fenï¿½tre coups ï¿½tendue (4-16, base ${scope})`);
-      }
-      setDebugLines(debug);
-
-      setTree(openingTree);
-      setLastRun({ you, opponent });
-      setExploredNodes(new Set());
-      const opponentNodeCount = openingTree.opponent.byColor.white.length + openingTree.opponent.byColor.black.length;
-      if (opponentNodeCount === 0) {
-        const baseReason = openingTree.meta?.opponentCutoffApplied
-          ? "Pas assez de parties rï¿½centes (4 mois) pour dessiner un arbre"
-          : "Aucune partie exploitable mï¿½me en remontant l'historique";
-        const adjustments: string[] = [];
-        if (openingTree.meta?.opponentRelaxedWindow) adjustments.push("fenï¿½tre coups 4-16");
-        if (openingTree.meta?.opponentUsedFallback) adjustments.push("historique complet");
-        const detailSuffix = adjustments.length ? ` Ajustements: ${adjustments.join(", ")}.` : "";
-        setPrepError(
-          `${baseReason}. (opp games: ${oppGames.length}, opp nodes: ${opponentNodeCount}).${detailSuffix}`
-        );
-      }
-    } catch (e: unknown) {
-      console.error("[App.run] failed", e);
-      setDebugLines((lines) => [...lines, `[debug] run error: ${String(e)}`]);
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [analyzer, chessCom]);
-
-  const handleSelectNode = useCallback(async (node: OpeningFenNode) => {
-    if (!tree) return;
-    setPrepError(null);
-    setSelectedNode(node);
-    setPrepSheet(null);
-    setPrepLoading(true);
-    setExploredNodes((prev) => {
-      const next = new Set(prev);
-      next.add(node.id);
-      return next;
-    });
-    try {
-      const sheet = await analyzer.createPrepSheet({
-        node,
-        opponentTree: tree.opponent,
-        yourIndex: tree.you.index,
-        explorer,
-      });
-      if (!sheet.leaks.length) {
-        setPrepError("Pas de fuite flagrante sur cette ligne, mais continue ta prep !");
-      }
-      setPrepSheet(sheet);
-    } catch (e: unknown) {
-      console.error("[App.handleSelectNode] failed", e);
-      setDebugLines((lines) => [...lines, `[debug] prep fetch error: ${String(e)}`]);
-      setPrepError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setPrepLoading(false);
-    }
-  };
-
-  const toggleVoiceListening = () => {
-    setVoiceStatus((prev) => {
-      if (prev === "listening") {
-        setVoiceTranscript("");
-        setVoiceResponse(null);
-        return "idle";
-      }
-      setVoiceTranscript("");
-      setVoiceResponse(null);
-      return "listening";
-    });
-  };
+  }, [voiceEnabled, voiceStatus, voiceSupported, resetVoice, startVoice, stopVoice]);
 
   const statusCards = (
     <div className="status-stack">
       {loading && (
         <div className="status-card is-loading">
-          <span aria-hidden>?</span>
+          <span aria-hidden>...</span>
           <div>
             <strong>Collecte Chess.com</strong>
-            <p>Je croise vos parties rï¿½centes pour dresser le profil stratï¿½gique.</p>
+            <p>Je croise les parties recentes pour dresser le profil.</p>
           </div>
         </div>
       )}
       {error && (
         <div className="status-card is-error" role="alert">
-          <span aria-hidden>??</span>
+          <span aria-hidden>!!</span>
           <div>
             <strong>Oups</strong>
             <p>{error}</p>
@@ -280,13 +448,13 @@ export default function App() {
           <span aria-hidden>??</span>
           <div>
             <strong>Explorer Lichess</strong>
-            <p>Je rï¿½cupï¿½re la thï¿½orie rï¿½cente et des modï¿½les pour ta ligne.</p>
+            <p>Je recupere la theorie recente et des modeles.</p>
           </div>
         </div>
       )}
       {prepError && !prepLoading && (
         <div className="status-card is-warning" role="alert">
-          <span aria-hidden>??</span>
+          <span aria-hidden>**</span>
           <div>
             <strong>Signal</strong>
             <p>{prepError}</p>
@@ -295,10 +463,10 @@ export default function App() {
       )}
       {!loading && !error && !tree && (
         <div className="status-card is-info">
-          <span aria-hidden>??</span>
+          <span aria-hidden>^^</span>
           <div>
             <strong>Entre deux pseudos</strong>
-            <p>On reconstruit la cartographie d'ouvertures rï¿½cemment jouï¿½es.</p>
+            <p>On reconstruira la cartographie d'ouvertures recente.</p>
           </div>
         </div>
       )}
@@ -313,7 +481,7 @@ export default function App() {
             <span className="experience-brand__pulse" aria-hidden />
             <div>
               <p className="micro-tag">Prep openings 2025</p>
-              <h1>Expï¿½rience augmentï¿½e d'analyse d'ouvertures</h1>
+              <h1>Experience augmentee d'analyse d'ouvertures</h1>
             </div>
           </div>
           <ExperienceToolbar
@@ -340,13 +508,11 @@ export default function App() {
                 return (
                   <article className="story-card">
                     <h2>Scouting automatique</h2>
-                    <p>
-                      L'IA nettoie les donnï¿½es Chess.com, dï¿½tecte les sï¿½ries rï¿½centes et prï¿½pare une cartographie ï¿½co-conï¿½ue pour toi.
-                    </p>
+                    <p>L'IA filtre les parties recentes, detecte les signaux faibles et respecte la sobriete numerique.</p>
                     <ul>
-                      <li>Filtre temporel dynamique (4 mois par dï¿½faut)</li>
-                      <li>Fallback historique si volume insuffisant</li>
-                      <li>Respect des droits humains : data publique uniquement</li>
+                      <li>Fenetre temporelle dynamique</li>
+                      <li>Fallback historique controle</li>
+                      <li>Data publique uniquement</li>
                     </ul>
                   </article>
                 );
@@ -354,13 +520,11 @@ export default function App() {
                 return (
                   <article className="story-card">
                     <h2>Navigation innovante</h2>
-                    <p>
-                      Scroll vertical pour les chapitres, horizontal pour zoomer dans une ligne. Les halos colorï¿½s rï¿½vï¿½lent la dangerositï¿½.
-                    </p>
+                    <p>Scroll vertical pour les chapitres, horizontal pour zoomer dans la ligne. Halos et micro animations.</p>
                     <ul>
-                      <li>Micro-interactions tactiles et clavier</li>
-                      <li>Visualisation abstraite plutï¿½t que tableaux</li>
-                      <li>Personnalisation : densitï¿½ adaptative, motion maï¿½trisï¿½e</li>
+                      <li>Micro interactions clavier et tactile</li>
+                      <li>Visualisation abstraite au lieu de tableaux</li>
+                      <li>Personnalisation motion et densite</li>
                     </ul>
                   </article>
                 );
@@ -368,27 +532,23 @@ export default function App() {
                 return (
                   <article className="story-card">
                     <h2>Storytelling interactif</h2>
-                    <p>
-                      Chaque fuite devient un mini-scenario : score adverse, recommandations, parties de rï¿½fï¿½rence. Laisse-toi guider.
-                    </p>
+                    <p>Chaque fuite devient un scenario: score adverse, ripostes, parties modeles et badges engages.</p>
                     <ul>
-                      <li>Badges dï¿½bloquï¿½s en temps rï¿½el</li>
-                      <li>Mode sombre optimisï¿½ pour sessions nocturnes</li>
-                      <li>Mode vocal accessible pour naviguer mains libres</li>
+                      <li>Badges gamifies en temps reel</li>
+                      <li>Mode sombre optimise</li>
+                      <li>Assistant vocal accessible</li>
                     </ul>
                   </article>
                 );
               default:
                 return (
                   <article className="story-card">
-                    <h2>Expï¿½rience augmentï¿½e</h2>
-                    <p>
-                      Personnalise ton interface, choisis ton ambiance, active l'assistant vocal. On raconte ton histoire d'ï¿½checs de maniï¿½re immersive.
-                    </p>
+                    <h2>Experience personnalisee</h2>
+                    <p>Choisis ton ambiance, active l'assistant, adapte la charge visuelle et garde le controle de tes donnees.</p>
                     <ul>
-                      <li>Accessibilitï¿½ renforcï¿½e (WCAG 2.2 AA+)</li>
-                      <li>Durabilitï¿½ numï¿½rique : mode ï¿½co, assets lï¿½gers</li>
-                      <li>Emotion design : palettes adaptatives, micro feedbacks</li>
+                      <li>Accessibilite WCAG 2.2</li>
+                      <li>Mode eco et assets legers</li>
+                      <li>Palette emotionnelle modulable</li>
                     </ul>
                   </article>
                 );
@@ -425,12 +585,10 @@ export default function App() {
             status={voiceStatus}
             transcript={voiceTranscript}
             assistantMessage={voiceResponse}
-            suggestions={[
-              "Rï¿½cupï¿½re mes parties rapides",
-              "Analyse l'adversaire",
-              "Active le mode sombre",
-            ]}
-            onSuggestion={(command) => setVoiceTranscript(command)}
+            suggestions={voiceSuggestions}
+            onSuggestion={(command) => {
+              void processVoice(command);
+            }}
             error={voiceStatus === "error" ? voiceResponse : null}
           />
 
@@ -442,7 +600,7 @@ export default function App() {
           />
 
           {debugLines.length > 0 && (
-            <details className="debug-block">
+            <details className="debug-block" open={debugOpen} onToggle={(event) => setDebugOpen((event.target as HTMLDetailsElement).open)}>
               <summary>Debug</summary>
               <pre>{debugLines.join("\n")}</pre>
             </details>
@@ -452,29 +610,18 @@ export default function App() {
 
       <footer className="experience-footer">
         <div>
-          <strong>Respect & durabilitï¿½</strong>
-          <p>
-            Empreinte carbone suivie, dark mode optimisï¿½, ressources compressï¿½es. Tu gardes le contrï¿½le sur tes donnï¿½es.
-          </p>
+          <strong>Respect et durabilite</strong>
+          <p>Empreinte suivie, dark mode optimise, ressources compressees. Tu gardes la main sur tes donnees.</p>
         </div>
         <div>
-          <strong>Accessibilitï¿½</strong>
-          <p>Contrastes ï¿½levï¿½s, zones cliquables ï¿½largies, navigation vocale, alt text systï¿½matique.</p>
+          <strong>Accessibilite</strong>
+          <p>Contrastes eleves, zones cliquables genereuses, navigation vocale et textes alternatifs.</p>
         </div>
         <div>
           <strong>Gamification responsable</strong>
-          <p>Badges liï¿½s ï¿½ la progression stratï¿½gique, feedback instantanï¿½, classement optionnel.</p>
+          <p>Badges relies a la progression, feedback instantane, classement optionnel.</p>
         </div>
       </footer>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

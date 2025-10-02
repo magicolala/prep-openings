@@ -1,4 +1,4 @@
-import type { Color, OpeningFenNode } from "../../domain/models";
+ï»¿import type { Color, OpeningFenNode } from "../../domain/models";
 
 interface OpeningTreeColumnProps {
   color: Color;
@@ -9,7 +9,7 @@ interface OpeningTreeColumnProps {
 
 const colorLabel: Record<Color, string> = {
   white: "Ses armes avec les Blancs",
-  black: "Ses lignes côté Noirs",
+  black: "Ses lignes cote Noirs",
 };
 
 const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
@@ -20,7 +20,7 @@ export default function OpeningTreeColumn({ color, nodes, activeNodeId, onSelect
       <section className="opening-column opening-column--empty">
         <header>
           <h3>{colorLabel[color]}</h3>
-          <p>Pas assez de parties récentes pour déceler des patterns fiables.</p>
+          <p>Pas assez de parties recentes pour detecter des patterns fiables.</p>
         </header>
       </section>
     );
@@ -32,10 +32,10 @@ export default function OpeningTreeColumn({ color, nodes, activeNodeId, onSelect
     <section className={`opening-column opening-column--${color}`}>
       <header className="opening-column__header">
         <div>
-          <p className="micro-tag">{color === "white" ? "En première" : "À la riposte"}</p>
+          <p className="micro-tag">{color === "white" ? "En premiere" : "A la riposte"}</p>
           <h3>{colorLabel[color]}</h3>
           <p className="opening-column__subtitle">
-            Visualisation abstraite : intensité = fréquence, halo = danger potentiel, puces = coups clefs.
+            Visualisation abstraite: intensite = frequence, halo = danger potentiel, puces = coups clefs.
           </p>
         </div>
       </header>
@@ -72,14 +72,14 @@ export default function OpeningTreeColumn({ color, nodes, activeNodeId, onSelect
               <div className="line-card__body">
                 <div className="line-card__titles">
                   <h4>{title}</h4>
-                  <p className="line-card__san">{node.sanLine.join(" ") || "(début de partie)"}</p>
+                  <p className="line-card__san">{node.sanLine.join(" ") || "(debut de partie)"}</p>
                 </div>
                 <div className="line-card__meta">
                   <span>{node.frequency} parties</span>
                   {eco && <span className="eco-tag">ECO {eco}</span>}
                   {node.yourOverlap && (
                     <span className="overlap-tag">
-                      Toi : {formatPercent(node.yourOverlap.score)} ({node.yourOverlap.frequency})
+                      Toi: {formatPercent(node.yourOverlap.score)} ({node.yourOverlap.frequency})
                     </span>
                   )}
                 </div>
@@ -89,14 +89,14 @@ export default function OpeningTreeColumn({ color, nodes, activeNodeId, onSelect
                       const shareLocal = move.count / (node.frequency || 1);
                       const moveScore = move.count ? move.scoreSum / move.count : 0;
                       return (
-                        <span key={move.san} className="move-chip" title={`${formatPercent(shareLocal)} · ${formatPercent(moveScore)}`}>
+                        <span key={move.san} className="move-chip" title={`${formatPercent(shareLocal)} - ${formatPercent(moveScore)}`}>
                           <span>{move.san}</span>
                           <small>{formatPercent(shareLocal)}</small>
                         </span>
                       );
                     })
                   ) : (
-                    <span className="move-chip move-chip--empty">Pas de coup référencé</span>
+                    <span className="move-chip move-chip--empty">Pas de coup reference</span>
                   )}
                 </div>
               </div>

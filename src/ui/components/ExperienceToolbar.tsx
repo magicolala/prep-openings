@@ -1,4 +1,4 @@
-import { useExperiencePreferences } from "../providers/ExperiencePreferences";
+ï»¿import { useExperiencePreferences } from "../providers/ExperiencePreferences";
 
 interface ExperienceToolbarProps {
   onToggleVoice: () => void;
@@ -22,7 +22,7 @@ export function ExperienceToolbar({ onToggleVoice, voiceListening, voiceSupporte
     toggleVoice,
   } = useExperiencePreferences();
 
-  const handleThemeCycle = () => {
+  const cycleTheme = () => {
     const order: Array<typeof appearance> = ["light", "dark", "auto"];
     const next = order[(order.indexOf(appearance) + 1) % order.length];
     setAppearance(next);
@@ -32,24 +32,24 @@ export function ExperienceToolbar({ onToggleVoice, voiceListening, voiceSupporte
     ? voiceListening
       ? "Assistant vocal actif"
       : voiceEnabled
-        ? "Assistant vocal prêt"
-        : "Assistant vocal désactivé"
-    : "Assistant vocal non supporté";
+        ? "Assistant vocal pret"
+        : "Assistant vocal desactive"
+    : "Assistant vocal non supporte";
 
   return (
-    <div className="experience-toolbar" role="group" aria-label="Préférences d'expérience">
+    <div className="experience-toolbar" role="group" aria-label="Preferences d'experience">
       <button
         type="button"
         className="toolbar-chip"
-        onClick={handleThemeCycle}
-        aria-label={`Changer le thème, actuel : ${appearance}`}
+        onClick={cycleTheme}
+        aria-label={`Changer le theme, actuel : ${appearance}`}
       >
-        <span aria-hidden>??</span>
-        <span>{appearance === "auto" ? "Thème auto" : appearance === "dark" ? "Thème nuit" : "Thème jour"}</span>
+        <span aria-hidden>*</span>
+        <span>{appearance === "auto" ? "Theme auto" : appearance === "dark" ? "Theme nuit" : "Theme jour"}</span>
       </button>
 
       <label className="toolbar-slider" aria-label="Changer la couleur d'accent">
-        <span aria-hidden>??</span>
+        <span aria-hidden>#</span>
         <input
           type="range"
           min={0}
@@ -65,7 +65,7 @@ export function ExperienceToolbar({ onToggleVoice, voiceListening, voiceSupporte
         onClick={() => setMotion(motion === "dynamic" ? "calm" : "dynamic")}
         aria-pressed={motion === "dynamic"}
       >
-        <span aria-hidden>?</span>
+        <span aria-hidden>+</span>
         <span>{motion === "dynamic" ? "Motion vive" : "Motion douce"}</span>
       </button>
 
@@ -75,7 +75,7 @@ export function ExperienceToolbar({ onToggleVoice, voiceListening, voiceSupporte
         onClick={() => setDensity(density === "comfortable" ? "compact" : "comfortable")}
         aria-pressed={density === "comfortable"}
       >
-        <span aria-hidden>??</span>
+        <span aria-hidden>=</span>
         <span>{density === "comfortable" ? "Layout ample" : "Layout dense"}</span>
       </button>
 
@@ -85,8 +85,8 @@ export function ExperienceToolbar({ onToggleVoice, voiceListening, voiceSupporte
         onClick={toggleEcoMode}
         aria-pressed={ecoMode}
       >
-        <span aria-hidden>??</span>
-        <span>{ecoMode ? "Mode éco" : "Énergie"}</span>
+        <span aria-hidden>!</span>
+        <span>{ecoMode ? "Mode eco" : "Energie"}</span>
       </button>
 
       <button
@@ -96,7 +96,7 @@ export function ExperienceToolbar({ onToggleVoice, voiceListening, voiceSupporte
         aria-pressed={voiceEnabled}
         disabled={!voiceSupported}
       >
-        <span aria-hidden>??</span>
+        <span aria-hidden>~</span>
         <span>{voiceEnabled ? "Voice on" : "Voice off"}</span>
       </button>
 
