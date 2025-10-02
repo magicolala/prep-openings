@@ -8,8 +8,8 @@ interface OpeningTreeColumnProps {
 }
 
 const colorLabel: Record<Color, string> = {
-  white: "Ses lignes avec les Blancs",
-  black: "Ses lignes avec les Noirs",
+  white: "Ses armes avec les Blancs",
+  black: "Ses lignes côté Noirs",
 };
 
 const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
@@ -17,69 +17,93 @@ const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
 export default function OpeningTreeColumn({ color, nodes, activeNodeId, onSelect }: OpeningTreeColumnProps) {
   if (!nodes.length) {
     return (
-      <div className="col">
-        <div className="card h-100 shadow-sm">
-          <div className="card-body text-muted small">
-            {color === "white"
-              ? "Pas assez de parties recentes avec les Blancs."
-              : "Pas assez de parties recentes avec les Noirs."}
-          </div>
-        </div>
-      </div>
+      <section className="opening-column opening-column--empty">
+        <header>
+          <h3>{colorLabel[color]}</h3>
+          <p>Pas assez de parties récentes pour déceler des patterns fiables.</p>
+        </header>
+      </section>
     );
   }
 
+  const maxFrequency = nodes.reduce((max, node) => Math.max(max, node.frequency), 1);
+
   return (
-    <div className="col">
-      <div className="d-flex flex-column gap-3">
-        <h2 className="h6 mb-0 text-uppercase text-muted">{colorLabel[color]}</h2>
-        {nodes.slice(0, 10).map(node => {
-          const total = node.frequency || 1;
+    <section className={`opening-column opening-column--${color}`}>
+      <header className="opening-column__header">
+        <div>
+          <p className="micro-tag">{color === "white" ? "En première" : "À la riposte"}</p>
+          <h3>{colorLabel[color]}</h3>
+          <p className="opening-column__subtitle">
+            Visualisation abstraite : intensité = fréquence, halo = danger potentiel, puces = coups clefs.
+          </p>
+        </div>
+      </header>
+
+      <div className="opening-column__list">
+        {nodes.slice(0, 10).map((node) => {
           const topMoves = node.moveSamples.slice(0, 3);
-          const title = (node.name ?? node.sanLine.slice(0, 6).join(" ")) || "Ouverture";
-          const badgeClass = node.id === activeNodeId ? "btn btn-sm btn-primary" : "btn btn-sm btn-outline-primary";
+          const share = Math.max(0.12, node.frequency / maxFrequency);
+          const threat = Math.max(0.05, node.score);
+          const eco = node.eco ? node.eco : null;
+          const title = node.name ?? (node.sanLine.length ? node.sanLine.slice(0, 4).join(" ") : "Ouverture");
+
           return (
-            <div key={node.id} className="card shadow-sm">
-              <div className="card-body d-flex flex-column gap-2">
-                <div className="d-flex justify-content-between align-items-start">
-                  <div>
-                    <h3 className="h6 mb-1">{title}</h3>
-                    <div className="text-muted small">
-                      Frequence {node.frequency} - Score {formatPercent(node.score)}
-                    </div>
-                    {node.eco && <div className="text-muted small">ECO {node.eco}</div>}
-                  </div>
-                  <button type="button" className={badgeClass} onClick={() => onSelect(node)}>
-                    Preparer
-                  </button>
+            <button
+              key={node.id}
+              type="button"
+              className={`line-card${node.id === activeNodeId ? " is-active" : ""}`}
+              onClick={() => onSelect(node)}
+            >
+              <div className="line-card__visual">
+                <div
+                  className="line-card__orb"
+                  style={{
+                    background: `conic-gradient(var(--accent-400) ${Math.round(threat * 360)}deg, rgba(148, 163, 184, 0.25) 0deg)`
+                  }}
+                >
+                  <span>{formatPercent(node.score)}</span>
                 </div>
-                <div className="font-monospace small bg-body-tertiary rounded px-3 py-2">
-                  {node.sanLine.join(" ") || "(debut de partie)"}
+                <div className="line-card__meter">
+                  <span style={{ width: `${Math.round(share * 100)}%` }} />
                 </div>
-                <div className="small">
-                  {topMoves.length ? "Coups habituels :" : "Pas de coups en base"}
-                  {topMoves.length > 0 && (
-                    <ul className="list-unstyled small mb-0 mt-1">
-                      {topMoves.map(move => {
-                        const share = move.count / total;
-                        const moveScore = move.count ? move.scoreSum / move.count : 0;
-                        return (
-                          <li key={move.san} className="d-flex justify-content-between">
-                            <span>{move.san}</span>
-                            <span className="text-muted">
-                              {formatPercent(share)} - {formatPercent(moveScore)}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
+              </div>
+
+              <div className="line-card__body">
+                <div className="line-card__titles">
+                  <h4>{title}</h4>
+                  <p className="line-card__san">{node.sanLine.join(" ") || "(début de partie)"}</p>
+                </div>
+                <div className="line-card__meta">
+                  <span>{node.frequency} parties</span>
+                  {eco && <span className="eco-tag">ECO {eco}</span>}
+                  {node.yourOverlap && (
+                    <span className="overlap-tag">
+                      Toi : {formatPercent(node.yourOverlap.score)} ({node.yourOverlap.frequency})
+                    </span>
+                  )}
+                </div>
+                <div className="line-card__moves">
+                  {topMoves.length ? (
+                    topMoves.map((move) => {
+                      const shareLocal = move.count / (node.frequency || 1);
+                      const moveScore = move.count ? move.scoreSum / move.count : 0;
+                      return (
+                        <span key={move.san} className="move-chip" title={`${formatPercent(shareLocal)} · ${formatPercent(moveScore)}`}>
+                          <span>{move.san}</span>
+                          <small>{formatPercent(shareLocal)}</small>
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <span className="move-chip move-chip--empty">Pas de coup référencé</span>
                   )}
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }

@@ -44,6 +44,9 @@ type FenMoveAggregate = {
 
 const DEFAULT_PLY_WINDOW: PlyWindow = [8, 12];
 const DEFAULT_MAX_PLIES = 20;
+const FOUR_MONTHS_MS = 1000 * 60 * 60 * 24 * 30 * 4;
+const RELAXED_PLY_WINDOW: PlyWindow = [4, 16];
+const RELAXED_MAX_PLIES = 24;
 const MIN_FREQ_FOR_LEAK = 3;
 const SCORE_GAP_THRESHOLD = 0.15;
 const LOW_POPULARITY_THRESHOLD = 0.05;
@@ -90,19 +93,58 @@ export class OpeningAnalyzer implements IOpeningAnalyzer {
     const { you, opponent, yourGames, oppGames } = params;
     const maxPlies = params.maxPlies ?? DEFAULT_MAX_PLIES;
     const plyWindow: PlyWindow = params.plyWindow ?? DEFAULT_PLY_WINDOW;
+    const cutoffEpochMs = Date.now() - FOUR_MONTHS_MS;
 
-    const opponentIndex = this.collectFenStats({
-      games: oppGames,
-      username: opponent.username,
-      maxPlies,
-      plyWindow,
-    });
-    const yourIndex = this.collectFenStats({
-      games: yourGames,
-      username: you.username,
-      maxPlies,
-      plyWindow,
-    });
+    type LoadIndexResult = {
+      index: Map<FenKey, FenAggregate>;
+      usedFallback: boolean;
+      relaxedWindow: boolean;
+      cutoffApplied: boolean;
+    };
+
+    const loadIndex = (games: ChessComGame[], username: string): LoadIndexResult => {
+      const attempts = [
+        { useCutoff: true, window: plyWindow, maxPliesOverride: maxPlies },
+        { useCutoff: true, window: RELAXED_PLY_WINDOW, maxPliesOverride: Math.max(maxPlies, RELAXED_MAX_PLIES) },
+        { useCutoff: false, window: plyWindow, maxPliesOverride: maxPlies },
+        { useCutoff: false, window: RELAXED_PLY_WINDOW, maxPliesOverride: Math.max(maxPlies, RELAXED_MAX_PLIES) },
+      ] as const;
+
+      let lastIndex: Map<FenKey, FenAggregate> = new Map();
+      let lastMeta: LoadIndexResult = {
+        index: lastIndex,
+        usedFallback: true,
+        relaxedWindow: true,
+        cutoffApplied: false,
+      };
+
+      for (const attempt of attempts) {
+        const index = this.collectFenStats({
+          games,
+          username,
+          maxPlies: attempt.maxPliesOverride,
+          plyWindow: attempt.window,
+          cutoffEpochMs: attempt.useCutoff ? cutoffEpochMs : undefined,
+        });
+        lastIndex = index;
+        lastMeta = {
+          index,
+          usedFallback: !attempt.useCutoff,
+          relaxedWindow: attempt.window === RELAXED_PLY_WINDOW,
+          cutoffApplied: attempt.useCutoff,
+        };
+        if (index.size > 0) {
+          return lastMeta;
+        }
+      }
+
+      return lastMeta;
+    };
+
+    const opponentLoad = loadIndex(oppGames, opponent.username);
+    const yourLoad = loadIndex(yourGames, you.username);
+    const opponentIndex = opponentLoad.index;
+    const yourIndex = yourLoad.index;
 
     const opponentNodes = this.materializeFenNodes(opponentIndex);
     const yourNodes = this.materializeFenNodes(yourIndex);
@@ -144,6 +186,13 @@ export class OpeningAnalyzer implements IOpeningAnalyzer {
         white: opponentByColor.white.length,
         black: opponentByColor.black.length,
       },
+      cutoffEpochMs,
+      opponentFallback: opponentLoad.usedFallback,
+      yourFallback: yourLoad.usedFallback,
+      opponentRelaxedWindow: opponentLoad.relaxedWindow,
+      yourRelaxedWindow: yourLoad.relaxedWindow,
+      opponentCutoffApplied: opponentLoad.cutoffApplied,
+      yourCutoffApplied: yourLoad.cutoffApplied,
     });
 
     return {
@@ -155,167 +204,201 @@ export class OpeningAnalyzer implements IOpeningAnalyzer {
         byColor: yourByColor,
         index: yourFenIndex,
       },
+      meta: {
+        opponentUsedFallback: opponentLoad.usedFallback,
+        youUsedFallback: yourLoad.usedFallback,
+        opponentRelaxedWindow: opponentLoad.relaxedWindow,
+        youRelaxedWindow: yourLoad.relaxedWindow,
+        opponentCutoffApplied: opponentLoad.cutoffApplied,
+        youCutoffApplied: yourLoad.cutoffApplied,
+        cutoffEpochMs: opponentLoad.cutoffApplied || yourLoad.cutoffApplied ? cutoffEpochMs : undefined,
+      },
     };
   }
-
-  async createPrepSheet(params: {
-    node: OpeningFenNode;
-    opponentTree: OpeningTreeResult["opponent"];
-    yourIndex: OpeningTreeResult["you"]["index"];
-    explorer: ILichessExplorerService;
-    punishmentsPerLeak?: number;
-    maxModelGames?: number;
-  }): Promise<PrepSheet> {
-    const { node, explorer } = params;
-    console.debug('[OpeningAnalyzer.createPrepSheet] start', { id: node.id, sanLine: node.sanLine, preferred: node.preferredMove });
-    const punishmentsPerLeak = params.punishmentsPerLeak ?? PUNISHMENTS_DEFAULT;
-    const maxModelGames = params.maxModelGames ?? MODEL_GAMES_DEFAULT;
-    const explorerCache = new Map<string, ExplorerPositionInfo>();
-    const getExplorerInfo = async (line: string[]): Promise<ExplorerPositionInfo> => {
-      const key = line.join(' ');
-      let info = explorerCache.get(key);
-      if (!info) {
-        info = await explorer.getPositionInfo(line);
-        explorerCache.set(key, info);
-      }
-      return info;
-    };
-    const baseInfo = await getExplorerInfo(node.sanLine);
-    const explorerMoves = [...(baseInfo.moves ?? [])].sort((a, b) => (b.total ?? 0) - (a.total ?? 0));
-    const explorerTotalGames = explorerMoves.reduce((sum, move) => sum + (move.total ?? 0), 0) || 1;
-    const leakEntries: Array<{ leak: PrepLeak; score: number }> = [];
-    for (const sample of node.moveSamples) {
-      if (sample.count < MIN_FREQ_FOR_LEAK) continue;
-      const playerAvgScore = this.safeAverage(sample.scoreSum, sample.count);
-      const explorerMoveIndex = explorerMoves.findIndex(move => move.san === sample.san);
-      const explorerMove = explorerMoveIndex >= 0 ? explorerMoves[explorerMoveIndex] : undefined;
-      const reasons: string[] = [];
-      let explorerScore: number | undefined;
-      let explorerPopularity: number | undefined;
-      let popularityGap = 0;
-      let scoreGap = 0;
-      let rankPenalty = 0;
-      let moveOrderTagged = false;
-      const bestMove = explorerMoves[0];
-      const bestPopularity = bestMove ? (bestMove.total ?? 0) / explorerTotalGames : 0;
-      if (explorerMove) {
-        explorerScore = this.scoreForColor(explorerMove, node.color);
-        explorerPopularity = (explorerMove.total ?? 0) / explorerTotalGames;
-        scoreGap = explorerScore - playerAvgScore;
-        if (scoreGap >= SCORE_GAP_THRESHOLD) {
-          reasons.push(`Score perso ${Math.round(playerAvgScore * 100)}% vs ${Math.round(explorerScore * 100)}% sur Lichess`);
-        }
-        const rank = explorerMoveIndex + 1;
-        if (rank > EXPLORER_TOP_RANK) {
-          reasons.push(`Son ${sample.san} sort du top ${EXPLORER_TOP_RANK} Explorer (rang ${rank}).`);
-          rankPenalty = 0.5;
-        }
-        if (rank === 1 && playerAvgScore <= ZERO_SCORE_THRESHOLD) {
-          reasons.push(`Top move mais score ${Math.round(playerAvgScore * 100)}%. Vise la ligne critique.`);
-        }
-        if (bestMove && bestMove !== explorerMove) {
-          const bestPop = (bestMove.total ?? 0) / explorerTotalGames;
-          popularityGap = bestPop - (explorerPopularity ?? 0);
-          if ((explorerPopularity ?? 0) < LOW_POPULARITY_THRESHOLD && bestPop >= ALT_POPULARITY_THRESHOLD) {
-            reasons.push(
-              `Joue ${sample.san} (${Math.round((explorerPopularity ?? 0) * 100)}%) alors que ${bestMove.san} domine (${Math.round(bestPop * 100)}%). Prepare la ref standard.`
-            );
-          } else if (rank > 1) {
-            reasons.push(`S'ecarte du top Explorer (${bestMove.san}).`);
-          }
-        }
-      } else {
-        reasons.push("Coup absent d'Explorer: profite-en.");
-        popularityGap = bestPopularity;
-      }
-      if (!explorerMoves.length) {
-        reasons.push('Explorer muet sur la position: impose ton plan.');
-      }
-      const infoAfter = await getExplorerInfo(sample.fullSanLine);
-      const ourColor: Color = node.color === 'white' ? 'black' : 'white';
-      const punishments = this.selectPunishments(infoAfter.moves ?? [], ourColor, punishmentsPerLeak);
-      const moveOrderNote = await this.detectMoveOrderTrap({
-        node,
-        sample,
-        getExplorerInfo,
-        expectedPrimaryRef: punishments[0]?.san,
-      });
-      if (moveOrderNote) {
-        moveOrderTagged = true;
-        reasons.push(moveOrderNote);
-      }
-      if (!reasons.length) continue;
-      const recentRaw = this.mapRecentGames(infoAfter.recentGames ?? []);
-      const recent = recentRaw.map(game => ({ ...game, highlight: sample.san }));
-      const afterFen = this.computeFenFromSanLine(sample.fullSanLine);
-      const yourNode = params.yourIndex[afterFen];
-      const leak: PrepLeak = {
-        id: `${node.id}-${this.simpleHash(sample.san)}`,
-        color: node.color,
-        fen: afterFen,
-        sanLine: [...sample.fullSanLine],
-        move: sample.san,
-        frequency: sample.count,
-        playerScore: playerAvgScore,
-        explorerScore,
-        explorerPopularity,
-        reason: reasons.join(' | '),
-        recommendedResponses: punishments,
-        sampleGameUrl: sample.sampleGameUrl ?? node.sampleGameUrl,
-        openingName: node.name ?? baseInfo.opening?.name ?? infoAfter.opening?.name,
-        eco: node.eco ?? baseInfo.opening?.eco ?? infoAfter.opening?.eco,
-        lichessRecentGames: recent,
-        yourOverlap: yourNode
-          ? {
-              frequency: yourNode.frequency,
-              score: yourNode.score,
-            }
-          : undefined,
-      };
-      const severity = this.computeLeakPriority({
-        frequency: sample.count,
-        scoreGap,
-        popularityGap,
-        rankPenalty,
-        explorerMissed: !explorerMove,
-        moveOrderTagged,
-        playerScore: playerAvgScore,
-      });
-      leakEntries.push({ leak, score: severity });
-    }
-    const leaks = leakEntries
-      .sort((a, b) => b.score - a.score)
-      .slice(0, MAX_LEAKS_PER_COLOR)
-      .map(entry => entry.leak);
-    const modelGameMap = new Map<string, PrepModelGame>();
-    for (const leak of leaks) {
-      for (const game of leak.lichessRecentGames ?? []) {
-        if (!game.id) continue;
-        if (!modelGameMap.has(game.id)) {
-          modelGameMap.set(game.id, game);
-        }
-        if (modelGameMap.size >= maxModelGames) break;
-      }
-      if (modelGameMap.size >= maxModelGames) break;
-    }
-    const modelGames = Array.from(modelGameMap.values()).slice(0, maxModelGames);
-    console.debug('[OpeningAnalyzer.createPrepSheet]', {
-      node: node.id,
-      leaks: leaks.length,
-      evaluated: leakEntries.length,
-      modelPool: modelGameMap.size,
-    });
-    return {
-      leaks,
-      modelGames,
-    };
-  }
-
+
+
+  async createPrepSheet(params: {
+    node: OpeningFenNode;
+    opponentTree: OpeningTreeResult["opponent"];
+    yourIndex: OpeningTreeResult["you"]["index"];
+    explorer: ILichessExplorerService;
+    punishmentsPerLeak?: number;
+    maxModelGames?: number;
+  }): Promise<PrepSheet> {
+    const { node, explorer } = params;
+    console.debug('[OpeningAnalyzer.createPrepSheet] start', { id: node.id, sanLine: node.sanLine, preferred: node.preferredMove });
+    const punishmentsPerLeak = params.punishmentsPerLeak ?? PUNISHMENTS_DEFAULT;
+    const maxModelGames = params.maxModelGames ?? MODEL_GAMES_DEFAULT;
+
+    const explorerCache = new Map<string, ExplorerPositionInfo>();
+    const getExplorerInfo = async (line: string[]): Promise<ExplorerPositionInfo> => {
+      const key = line.join(' ');
+      let info = explorerCache.get(key);
+      if (!info) {
+        info = await explorer.getPositionInfo(line);
+        explorerCache.set(key, info);
+      }
+      return info;
+    };
+
+    const baseInfo = await getExplorerInfo(node.sanLine);
+    const explorerMoves = [...(baseInfo.moves ?? [])].sort((a, b) => (b.total ?? 0) - (a.total ?? 0));
+    const explorerTotalGames = explorerMoves.reduce((sum, move) => sum + (move.total ?? 0), 0) || 1;
+
+    const leakEntries: Array<{ leak: PrepLeak; score: number }> = [];
+
+    for (const sample of node.moveSamples) {
+      if (sample.count < MIN_FREQ_FOR_LEAK) continue;
+
+      const playerAvgScore = this.safeAverage(sample.scoreSum, sample.count);
+      const explorerMoveIndex = explorerMoves.findIndex(move => move.san === sample.san);
+      const explorerMove = explorerMoveIndex >= 0 ? explorerMoves[explorerMoveIndex] : undefined;
+
+      const reasons: string[] = [];
+      let explorerScore: number | undefined;
+      let explorerPopularity: number | undefined;
+      let popularityGap = 0;
+      let scoreGap = 0;
+      let rankPenalty = 0;
+      let moveOrderTagged = false;
+
+      const bestMove = explorerMoves[0];
+      const bestPopularity = bestMove ? (bestMove.total ?? 0) / explorerTotalGames : 0;
+
+      if (explorerMove) {
+        explorerScore = this.scoreForColor(explorerMove, node.color);
+        explorerPopularity = (explorerMove.total ?? 0) / explorerTotalGames;
+        scoreGap = explorerScore - playerAvgScore;
+        if (scoreGap >= SCORE_GAP_THRESHOLD) {
+          reasons.push(`Score perso ${Math.round(playerAvgScore * 100)}% vs ${Math.round(explorerScore * 100)}% sur Lichess`);
+        }
+
+        const rank = explorerMoveIndex + 1;
+        if (rank > EXPLORER_TOP_RANK) {
+          reasons.push(`Son ${sample.san} sort du top ${EXPLORER_TOP_RANK} Explorer (rang ${rank}).`);
+          rankPenalty = 0.5;
+        }
+
+        if (rank === 1 && playerAvgScore <= ZERO_SCORE_THRESHOLD) {
+          reasons.push(`Top move mais score ${Math.round(playerAvgScore * 100)}%. Vise la ligne critique.`);
+        }
+
+        if (bestMove && bestMove !== explorerMove) {
+          const bestPop = (bestMove.total ?? 0) / explorerTotalGames;
+          popularityGap = bestPop - (explorerPopularity ?? 0);
+          if ((explorerPopularity ?? 0) < LOW_POPULARITY_THRESHOLD && bestPop >= ALT_POPULARITY_THRESHOLD) {
+            reasons.push(
+              `Joue ${sample.san} (${Math.round((explorerPopularity ?? 0) * 100)}%) alors que ${bestMove.san} domine (${Math.round(bestPop * 100)}%). Prepare la ref standard.`
+            );
+          } else if (rank > 1) {
+            reasons.push(`S'ecarte du top Explorer (${bestMove.san}).`);
+          }
+        }
+      } else {
+        reasons.push("Coup absent d'Explorer: profite-en.");
+        popularityGap = bestPopularity;
+      }
+
+      if (!explorerMoves.length) {
+        reasons.push('Explorer muet sur la position: impose ton plan.');
+      }
+
+      const infoAfter = await getExplorerInfo(sample.fullSanLine);
+      const ourColor: Color = node.color === 'white' ? 'black' : 'white';
+      const punishments = this.selectPunishments(infoAfter.moves ?? [], ourColor, punishmentsPerLeak);
+
+      const moveOrderNote = await this.detectMoveOrderTrap({
+        node,
+        sample,
+        baseInfo,
+        getExplorerInfo,
+        expectedPrimaryRef: punishments[0]?.san,
+      });
+      if (moveOrderNote) {
+        moveOrderTagged = true;
+        reasons.push(moveOrderNote);
+      }
+
+      if (!reasons.length) continue;
+
+      const recentRaw = this.mapRecentGames(infoAfter.recentGames ?? []);
+      const recent = recentRaw.map(game => ({ ...game, highlight: sample.san }));
+      const afterFen = this.computeFenFromSanLine(sample.fullSanLine);
+      const yourNode = params.yourIndex[afterFen];
+
+      const leak: PrepLeak = {
+        id: `${node.id}-${this.simpleHash(sample.san)}`,
+        color: node.color,
+        fen: afterFen,
+        sanLine: [...sample.fullSanLine],
+        move: sample.san,
+        frequency: sample.count,
+        playerScore: playerAvgScore,
+        explorerScore,
+        explorerPopularity,
+        reason: reasons.join(' | '),
+        recommendedResponses: punishments,
+        sampleGameUrl: sample.sampleGameUrl ?? node.sampleGameUrl,
+        openingName: node.name ?? baseInfo.opening?.name ?? infoAfter.opening?.name,
+        eco: node.eco ?? baseInfo.opening?.eco ?? infoAfter.opening?.eco,
+        lichessRecentGames: recent,
+        yourOverlap: yourNode
+          ? {
+              frequency: yourNode.frequency,
+              score: yourNode.score,
+            }
+          : undefined,
+      };
+
+      const severity = this.computeLeakPriority({
+        frequency: sample.count,
+        scoreGap,
+        popularityGap,
+        rankPenalty,
+        explorerMissed: !explorerMove,
+        moveOrderTagged,
+        playerScore: playerAvgScore,
+      });
+      leakEntries.push({ leak, score: severity });
+    }
+
+    const leaks = leakEntries
+      .sort((a, b) => b.score - a.score)
+      .slice(0, MAX_LEAKS_PER_COLOR)
+      .map(entry => entry.leak);
+
+    const modelGameMap = new Map<string, PrepModelGame>();
+    for (const leak of leaks) {
+      for (const game of leak.lichessRecentGames ?? []) {
+        if (!game.id) continue;
+        if (!modelGameMap.has(game.id)) {
+          modelGameMap.set(game.id, game);
+        }
+        if (modelGameMap.size >= maxModelGames) break;
+      }
+      if (modelGameMap.size >= maxModelGames) break;
+    }
+    const modelGames = Array.from(modelGameMap.values()).slice(0, maxModelGames);
+
+    console.debug('[OpeningAnalyzer.createPrepSheet]', {
+      node: node.id,
+      leaks: leaks.length,
+      evaluated: leakEntries.length,
+      modelPool: modelGameMap.size,
+    });
+
+    return {
+      leaks,
+      modelGames,
+    };
+  }
+
   private collectFenStats(params: {
     games: ChessComGame[];
     username: string;
     maxPlies: number;
     plyWindow: PlyWindow;
+    cutoffEpochMs?: number;
   }): Map<FenKey, FenAggregate> {
     const target = params.username.trim().toLowerCase();
     const map = new Map<FenKey, FenAggregate>();
@@ -326,6 +409,7 @@ export class OpeningAnalyzer implements IOpeningAnalyzer {
       colorMisses: 0,
       invalidPgn: 0,
       fenHits: 0,
+      timeFiltered: 0,
     };
 
     for (const game of params.games) {
@@ -340,11 +424,22 @@ export class OpeningAnalyzer implements IOpeningAnalyzer {
       }
       debug.colorMatches += 1;
 
+      if (typeof params.cutoffEpochMs === "number") {
+        const endTs = typeof game.end_time === "number" ? game.end_time * 1000 : null;
+        if (endTs !== null && endTs < params.cutoffEpochMs) {
+          debug.timeFiltered += 1;
+          continue;
+        }
+      }
+
       try {
         const base = new Chess();
-        const loaded = base.loadPgn(game.pgn) as unknown as boolean;
+        const loaded = this.tryLoadPgn(base, game.pgn);
         if (!loaded) {
           debug.invalidPgn += 1;
+          if (debug.invalidPgn <= 5) {
+            console.debug('[OpeningAnalyzer.collectFenStats] PGN parse failed', { username: target, url: game.url });
+          }
           continue;
         }
         const header = base.header() as Record<string, string>;
@@ -571,6 +666,111 @@ export class OpeningAnalyzer implements IOpeningAnalyzer {
     return out;
   }
 
+  private tryLoadPgn(chess: Chess, pgn?: string | null): boolean {
+    if (!pgn) return false;
+    const trimmed = pgn.trim();
+    if (!trimmed) return false;
+    try {
+      const loader = chess as unknown as { loadPgn: (p: string, options?: Record<string, unknown>) => unknown };
+      const result = loader.loadPgn(trimmed, { sloppy: true });
+      if (typeof result === 'boolean') return result;
+      return chess.history().length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  private computeLeakPriority(params: {
+    frequency: number;
+    scoreGap: number;
+    popularityGap: number;
+    rankPenalty: number;
+    explorerMissed: boolean;
+    moveOrderTagged: boolean;
+    playerScore: number;
+  }): number {
+    const frequencyScore = params.frequency * 1.5;
+    const scoreGapScore = Math.max(0, params.scoreGap) * 12;
+    const rarityScore = Math.max(0, params.popularityGap) * 20;
+    const rankScore = params.rankPenalty;
+    const explorerBonus = params.explorerMissed ? 3 : 0;
+    const trapBonus = params.moveOrderTagged ? 2 : 0;
+    const collapseBonus = params.playerScore <= ZERO_SCORE_THRESHOLD ? 1 : 0;
+    return frequencyScore + scoreGapScore + rarityScore + rankScore + explorerBonus + trapBonus + collapseBonus;
+  }
+
+  private async detectMoveOrderTrap(params: {
+    node: OpeningFenNode;
+    sample: OpeningFenNode["moveSamples"][number];
+    baseInfo: ExplorerPositionInfo;
+    getExplorerInfo: (line: string[]) => Promise<ExplorerPositionInfo>;
+    expectedPrimaryRef?: string;
+  }): Promise<string | null> {
+    const { node, sample, baseInfo, getExplorerInfo, expectedPrimaryRef } = params;
+    const fullLine = sample.fullSanLine;
+    if (fullLine.length < 4) return null;
+
+    const actualOppMoves: string[] = [];
+    const theoreticalOppMoves: string[] = [];
+    const replay = new Chess();
+    const prefix: string[] = [];
+
+    const pickMoveOrderCandidates = (info: ExplorerPositionInfo | undefined): ExplorerMoveStat[] => {
+      const moves = info?.moves ?? [];
+      if (!moves.length) return [];
+      const total = moves.reduce((sum, move) => sum + (move.total ?? 0), 0) || 1;
+      return moves
+        .slice()
+        .sort((a, b) => (b.total ?? 0) - (a.total ?? 0))
+        .filter((move, index) => {
+          const popularity = (move.total ?? 0) / total;
+          if (index === 0) return popularity >= MOVE_ORDER_POP_THRESHOLD;
+          if (index >= MOVE_ORDER_MAX_RANK) return false;
+          return popularity >= MOVE_ORDER_MIN_POP;
+        });
+    };
+
+    for (const san of node.sanLine) {
+      const colorToMove: Color = replay.turn() === 'w' ? 'white' : 'black';
+      if (colorToMove === node.color) {
+        const info = await getExplorerInfo(prefix);
+        const candidates = pickMoveOrderCandidates(info);
+        if (candidates.length) theoreticalOppMoves.push(candidates[0].san);
+      }
+      if (colorToMove === node.color) {
+        actualOppMoves.push(san);
+      }
+      replay.move(san);
+      prefix.push(san);
+    }
+
+    const baseCandidates = pickMoveOrderCandidates(baseInfo);
+    if (baseCandidates.length) {
+      theoreticalOppMoves.push(baseCandidates[0].san);
+    }
+    actualOppMoves.push(sample.san);
+
+    if (actualOppMoves.length < 2 || theoreticalOppMoves.length < 2) {
+      return null;
+    }
+
+    const actualLastTwo = actualOppMoves.slice(-2);
+    const theoreticalLastTwo = theoreticalOppMoves.slice(-2);
+    const actualSet = new Set(actualLastTwo);
+    const theoreticalSet = new Set(theoreticalLastTwo);
+    const sameContent = actualSet.size === theoreticalSet.size && [...actualSet].every(move => theoreticalSet.has(move));
+    if (!sameContent) {
+      return null;
+    }
+
+    if (actualLastTwo[0] === theoreticalLastTwo[0] && actualLastTwo[1] === theoreticalLastTwo[1]) {
+      return null;
+    }
+
+    const punchline = expectedPrimaryRef
+      ? `Note ${expectedPrimaryRef} pour exploiter l'inversion.`
+      : "Profite de la ressource tactique classique sur cet ordre.";
+    return `Ordre de coups interverti: ${actualLastTwo.join(' puis ')} au lieu de ${theoreticalLastTwo.join(' puis ')}. ${punchline}`;
+  }
 
 }
-

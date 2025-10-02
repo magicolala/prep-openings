@@ -1,11 +1,174 @@
-body {
-  margin: 0;
-  font-family: var(--bs-body-font-family, system-ui, -apple-system, "Segoe UI", sans-serif);
-  background-color: var(--bs-body-bg, #f8f9fa);
-  color: var(--bs-body-color, #212529);
+:root {
+  color-scheme: light;
+  --font-sans: "Manrope", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-condensed: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --surface: #f6f7fb;
+  --surface-elevated: rgba(255, 255, 255, 0.85);
+  --surface-glass: rgba(255, 255, 255, 0.65);
+  --surface-inverse: #0f172a;
+  --text-primary: #101828;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --shadow-soft: 0 12px 32px rgba(15, 23, 42, 0.08);
+  --shadow-hard: 0 24px 48px rgba(15, 23, 42, 0.12);
+  --gradient-accent: linear-gradient(135deg, var(--accent-500), var(--accent-300));
+  --gradient-surface: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.12), transparent 55%),
+    radial-gradient(circle at 80% 0%, rgba(236, 72, 153, 0.1), transparent 45%);
+  --accent-50: #eef2ff;
+  --accent-100: #e0e7ff;
+  --accent-200: #c7d2fe;
+  --accent-300: #a5b4fc;
+  --accent-400: #818cf8;
+  --accent-500: #6366f1;
+  --accent-600: #4f46e5;
+  --accent-700: #4338ca;
+  --accent-contrast: #f5f3ff;
+  --positive-500: #10b981;
+  --warning-500: #f59e0b;
+  --danger-500: #ef4444;
+  --info-500: #0ea5e9;
+  --glass-blur: blur(22px);
+  --transition-base: 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  --radius-lg: 28px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+  --border-width: 1px;
+  --max-content-width: min(1180px, 100vw - 3rem);
+  --voice-wave-color: rgba(99, 102, 241, 0.4);
+  --vignette: radial-gradient(circle, rgba(15, 23, 42, 0.08), transparent 65%);
 }
 
-code,
-pre {
-  font-family: var(--bs-font-monospace, SFMono-Regular, Menlo, monospace);
+[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #050b18;
+  --surface-elevated: rgba(13, 24, 46, 0.72);
+  --surface-glass: rgba(11, 24, 45, 0.54);
+  --surface-inverse: #e2e8f0;
+  --text-primary: #f0f6ff;
+  --text-secondary: #cbd5f5;
+  --text-muted: #94a3b8;
+  --border-subtle: rgba(148, 163, 184, 0.18);
+  --shadow-soft: 0 12px 42px rgba(2, 6, 23, 0.55);
+  --shadow-hard: 0 32px 56px rgba(2, 6, 23, 0.7);
+  --gradient-surface: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.22), transparent 55%),
+    radial-gradient(circle at 80% 0%, rgba(236, 72, 153, 0.18), transparent 45%);
+  --accent-50: #181b51;
+  --accent-100: #1f2483;
+  --accent-200: #2b32a8;
+  --accent-300: #3d44d8;
+  --accent-400: #4f52fd;
+  --accent-500: #6470ff;
+  --accent-600: #8a9cff;
+  --accent-700: #bac3ff;
+  --accent-contrast: #050b18;
+  --voice-wave-color: rgba(100, 112, 255, 0.55);
+  --vignette: radial-gradient(circle, rgba(6, 17, 45, 0.5), transparent 65%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+@font-face {
+  font-family: "Manrope";
+  src: local("Manrope"), url("https://fonts.gstatic.com/s/manrope/v15/xn7gYHE41ni1AdIRggexSg.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 200 800;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: local("Space Grotesk"), url("https://fonts.gstatic.com/s/spacegrotesk/v14/QdVUSTchPBm7nuUeVf_6w25u.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 300 700;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  font-size: 16px;
+  background: var(--surface);
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--surface);
+  color: var(--text-primary);
+  min-height: 100vh;
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: var(--vignette);
+  opacity: 0.9;
+  transition: opacity var(--transition-base);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition-base), opacity var(--transition-base);
+}
+
+a:hover {
+  color: var(--accent-300);
+}
+
+a:focus-visible {
+  outline: 3px solid var(--accent-400);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  height: 9px;
+  width: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

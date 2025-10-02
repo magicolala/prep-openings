@@ -101,6 +101,16 @@ export interface OpeningTreeByColor {
   nodes: OpeningFenNode[];
 }
 
+export interface OpeningTreeResultMeta {
+  opponentUsedFallback: boolean;
+  youUsedFallback: boolean;
+  opponentRelaxedWindow: boolean;
+  youRelaxedWindow: boolean;
+  opponentCutoffApplied: boolean;
+  youCutoffApplied: boolean;
+  cutoffEpochMs?: number;
+}
+
 export interface OpeningTreeResult {
   opponent: {
     byColor: Record<Color, OpeningFenNode[]>;
@@ -110,6 +120,7 @@ export interface OpeningTreeResult {
     byColor: Record<Color, OpeningFenNode[]>;
     index: Record<string, OpeningFenNode>;
   };
+  meta?: OpeningTreeResultMeta;
 }
 
 export interface LichessExplorerGameRef {
