@@ -1,69 +1,72 @@
 :root {
   color-scheme: light;
-  --font-sans: "Manrope", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-condensed: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
-  --surface: #f6f7fb;
-  --surface-elevated: rgba(255, 255, 255, 0.85);
-  --surface-glass: rgba(255, 255, 255, 0.65);
-  --surface-inverse: #0f172a;
-  --text-primary: #101828;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
-  --border-subtle: rgba(15, 23, 42, 0.08);
-  --shadow-soft: 0 12px 32px rgba(15, 23, 42, 0.08);
-  --shadow-hard: 0 24px 48px rgba(15, 23, 42, 0.12);
-  --gradient-accent: linear-gradient(135deg, var(--accent-500), var(--accent-300));
-  --gradient-surface: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.12), transparent 55%),
-    radial-gradient(circle at 80% 0%, rgba(236, 72, 153, 0.1), transparent 45%);
-  --accent-50: #eef2ff;
-  --accent-100: #e0e7ff;
-  --accent-200: #c7d2fe;
-  --accent-300: #a5b4fc;
-  --accent-400: #818cf8;
-  --accent-500: #6366f1;
-  --accent-600: #4f46e5;
-  --accent-700: #4338ca;
-  --accent-contrast: #f5f3ff;
-  --positive-500: #10b981;
-  --warning-500: #f59e0b;
-  --danger-500: #ef4444;
-  --info-500: #0ea5e9;
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-condensed: var(--font-sans);
+  --surface: #f7f6ff;
+  --surface-elevated: rgba(255, 255, 255, 0.92);
+  --surface-glass: rgba(255, 255, 255, 0.78);
+  --surface-inverse: #1b1a2e;
+  --text-primary: #333333;
+  --text-secondary: #4d4d66;
+  --text-muted: #71718f;
+  --border-subtle: rgba(66, 71, 112, 0.12);
+  --shadow-soft: 0 18px 36px rgba(53, 57, 120, 0.12);
+  --shadow-hard: 0 22px 44px rgba(53, 57, 120, 0.16);
+  --gradient-accent: linear-gradient(135deg, #705bff, #5fc2ff);
+  --gradient-surface: linear-gradient(180deg, #f5f3ff 0%, #ffffff 100%);
+  --accent-50: #f5f3ff;
+  --accent-100: #e7e1ff;
+  --accent-200: #cdc2ff;
+  --accent-300: #b3a3ff;
+  --accent-400: #9486ff;
+  --accent-500: #705bff;
+  --accent-600: #5b46e3;
+  --accent-700: #3d33b8;
+  --accent-contrast: #ffffff;
+  --contrast-100: #e6f4ff;
+  --contrast-300: #c3e8ff;
+  --contrast-500: #6fc7ff;
+  --contrast-700: #1f8cd6;
+  --positive-500: #12b886;
+  --warning-500: #f8b13b;
+  --danger-500: #f2555a;
+  --info-500: #1d9bef;
   --glass-blur: blur(22px);
-  --transition-base: 180ms cubic-bezier(0.22, 1, 0.36, 1);
-  --radius-lg: 28px;
-  --radius-md: 18px;
+  --transition-base: 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  --radius-lg: 24px;
+  --radius-md: 16px;
   --radius-sm: 12px;
+  --radius-pill: 999px;
   --border-width: 1px;
   --max-content-width: min(1180px, 100vw - 3rem);
-  --voice-wave-color: rgba(99, 102, 241, 0.4);
-  --vignette: radial-gradient(circle, rgba(15, 23, 42, 0.08), transparent 65%);
+  --voice-wave-color: rgba(112, 91, 255, 0.35);
+  --vignette: radial-gradient(circle, rgba(70, 70, 120, 0.06), transparent 65%);
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --surface: #050b18;
-  --surface-elevated: rgba(13, 24, 46, 0.72);
-  --surface-glass: rgba(11, 24, 45, 0.54);
-  --surface-inverse: #e2e8f0;
-  --text-primary: #f0f6ff;
-  --text-secondary: #cbd5f5;
-  --text-muted: #94a3b8;
-  --border-subtle: rgba(148, 163, 184, 0.18);
-  --shadow-soft: 0 12px 42px rgba(2, 6, 23, 0.55);
-  --shadow-hard: 0 32px 56px rgba(2, 6, 23, 0.7);
-  --gradient-surface: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.22), transparent 55%),
-    radial-gradient(circle at 80% 0%, rgba(236, 72, 153, 0.18), transparent 45%);
-  --accent-50: #181b51;
-  --accent-100: #1f2483;
-  --accent-200: #2b32a8;
-  --accent-300: #3d44d8;
-  --accent-400: #4f52fd;
-  --accent-500: #6470ff;
-  --accent-600: #8a9cff;
-  --accent-700: #bac3ff;
-  --accent-contrast: #050b18;
-  --voice-wave-color: rgba(100, 112, 255, 0.55);
-  --vignette: radial-gradient(circle, rgba(6, 17, 45, 0.5), transparent 65%);
+  --surface: #111225;
+  --surface-elevated: rgba(25, 27, 51, 0.78);
+  --surface-glass: rgba(23, 25, 48, 0.62);
+  --surface-inverse: #f5f6ff;
+  --text-primary: #f4f3ff;
+  --text-secondary: #c9c7ff;
+  --text-muted: #9a99c7;
+  --border-subtle: rgba(147, 155, 210, 0.2);
+  --shadow-soft: 0 20px 40px rgba(7, 8, 26, 0.55);
+  --shadow-hard: 0 32px 56px rgba(7, 8, 26, 0.7);
+  --gradient-surface: linear-gradient(180deg, rgba(41, 43, 90, 0.6) 0%, rgba(17, 18, 37, 0.85) 100%);
+  --accent-50: #241f5d;
+  --accent-100: #2d2780;
+  --accent-200: #3b35a8;
+  --accent-300: #5149d3;
+  --accent-400: #6b63ff;
+  --accent-500: #8a84ff;
+  --accent-600: #a5a1ff;
+  --accent-700: #cac9ff;
+  --accent-contrast: #0f1024;
+  --voice-wave-color: rgba(138, 132, 255, 0.55);
+  --vignette: radial-gradient(circle, rgba(9, 11, 30, 0.45), transparent 65%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -73,17 +76,10 @@
 }
 
 @font-face {
-  font-family: "Manrope";
-  src: local("Manrope"), url("https://fonts.gstatic.com/s/manrope/v15/xn7gYHE41ni1AdIRggexSg.woff2") format("woff2");
+  font-family: "Inter";
+  src: local("Inter"), url("https://fonts.gstatic.com/s/inter/v12/UcCO3H6mBB8r6X4m2L9Z5w.woff2") format("woff2");
   font-display: swap;
-  font-weight: 200 800;
-}
-
-@font-face {
-  font-family: "Space Grotesk";
-  src: local("Space Grotesk"), url("https://fonts.gstatic.com/s/spacegrotesk/v14/QdVUSTchPBm7nuUeVf_6w25u.woff2") format("woff2");
-  font-display: swap;
-  font-weight: 300 700;
+  font-weight: 400 700;
 }
 
 * {
@@ -101,10 +97,37 @@ html {
 body {
   margin: 0;
   font-family: var(--font-sans);
+  font-weight: 400;
   background: var(--surface);
   color: var(--text-primary);
   min-height: 100vh;
   transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+p,
+li,
+label {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+small,
+.micro-tag,
+.micro-copy {
+  color: var(--text-muted);
 }
 
 body::before {
