@@ -32,11 +32,28 @@ export class ChessComService implements IChessComService {
     }
   }
 
-  async getRecentGames(username: string, monthsBack: number): Promise<ChessComGame[]> {
+  async getRecentGames(
+    username: string,
+    monthsBack: number,
+    onProgress?: (progress: {
+      username: string;
+      games: number;
+      monthsFetched: number;
+      monthsTotal: number;
+    }) => void
+  ): Promise<ChessComGame[]> {
     const u = username.toLowerCase();
     const cacheKey = `chesscom:recent:${u}:${monthsBack}`;
     const cached = this.readCache<ChessComGame[]>(cacheKey);
-    if (cached) return cached;
+    if (cached) {
+      onProgress?.({
+        username: u,
+        games: cached.length,
+        monthsFetched: monthsBack,
+        monthsTotal: monthsBack,
+      });
+      return cached;
+    }
     const archivesUrl = `${this.base}/${encodeURIComponent(u)}/games/archives`;
     const archivesResp = await fetch(archivesUrl);
     if (!archivesResp.ok) throw new Error(`Chess.com archives failed: ${archivesResp.status}`);
@@ -44,26 +61,35 @@ export class ChessComService implements IChessComService {
 
     // Take last N monthly archive URLs
     const lastN = archives.slice(-monthsBack);
+    const monthsTotal = lastN.length;
     const results: ChessComGame[] = [];
+    if (monthsTotal === 0) {
+      onProgress?.({ username: u, games: 0, monthsFetched: 0, monthsTotal: 0 });
+    }
+
+    let monthsFetched = 0;
     for (const url of lastN) {
       const r = await fetch(url);
-      if (!r.ok) continue;
-      const data = await r.json();
-      if (Array.isArray(data.games)) {
-        for (const g of data.games) {
-          // normalize field names
-          results.push({
-            url: g.url,
-            pgn: g.pgn,
-            time_control: g.time_control,
-            end_time: g.end_time,
-            rated: g.rated,
-            eco: typeof g.eco === "string" ? g.eco : g.eco?.url,
-            white: { username: g.white?.username?.toLowerCase?.() ?? "", result: g.white?.result },
-            black: { username: g.black?.username?.toLowerCase?.() ?? "", result: g.black?.result },
-          });
+      if (r.ok) {
+        const data = await r.json();
+        if (Array.isArray(data.games)) {
+          for (const g of data.games) {
+            // normalize field names
+            results.push({
+              url: g.url,
+              pgn: g.pgn,
+              time_control: g.time_control,
+              end_time: g.end_time,
+              rated: g.rated,
+              eco: typeof g.eco === "string" ? g.eco : g.eco?.url,
+              white: { username: g.white?.username?.toLowerCase?.() ?? "", result: g.white?.result },
+              black: { username: g.black?.username?.toLowerCase?.() ?? "", result: g.black?.result },
+            });
+          }
         }
       }
+      monthsFetched += 1;
+      onProgress?.({ username: u, games: results.length, monthsFetched, monthsTotal });
     }
     this.writeCache(cacheKey, results);
     return results;

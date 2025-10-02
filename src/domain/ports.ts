@@ -14,7 +14,16 @@ export interface IClock {
 }
 
 export interface IChessComService {
-  getRecentGames(username: string, monthsBack: number): Promise<ChessComGame[]>;
+  getRecentGames(
+    username: string,
+    monthsBack: number,
+    onProgress?: (progress: {
+      username: string;
+      games: number;
+      monthsFetched: number;
+      monthsTotal: number;
+    }) => void
+  ): Promise<ChessComGame[]>;
 }
 
 export interface ILichessExplorerService {

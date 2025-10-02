@@ -53,6 +53,20 @@ const ACCENT_PRESETS = [
 ] as const;
 
 const DEFAULT_SUGGESTIONS = ["mode sombre", "chapitre analyse", "relance analyse"];
+const MONTHS_BACK = 4;
+
+type CollectionProgressEntry = {
+  username: string;
+  games: number;
+  monthsFetched: number;
+  monthsTotal: number;
+};
+
+type CollectionProgressState = {
+  you: CollectionProgressEntry;
+  opponent: CollectionProgressEntry;
+  totalGames: number;
+};
 
 export default function App() {
   const chessCom = useMemo(() => new ChessComService(), []);
@@ -73,6 +87,7 @@ export default function App() {
   const [lastRun, setLastRun] = useState<{ you: string; opponent: string } | null>(null);
   const [debugOpen, setDebugOpen] = useState(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [collectionProgress, setCollectionProgress] = useState<CollectionProgressState | null>(null);
 
   const {
     appearance,
@@ -100,15 +115,64 @@ export default function App() {
       setPrepSheet(null);
       setDebugLines([]);
       setAssistantMessage(null);
+      setCollectionProgress(null);
       if (!you || !opponent) {
         setError("Renseigne les deux pseudos pour lancer l'analyse.");
         return;
       }
       setLoading(true);
+      setCollectionProgress({
+        you: { username: you, games: 0, monthsFetched: 0, monthsTotal: MONTHS_BACK },
+        opponent: { username: opponent, games: 0, monthsFetched: 0, monthsTotal: MONTHS_BACK },
+        totalGames: 0,
+      });
+      const updateCollectionProgress = (
+        side: "you" | "opponent"
+      ): ((progress: {
+        username: string;
+        games: number;
+        monthsFetched: number;
+        monthsTotal: number;
+      }) => void) => {
+        return (progress) => {
+          setCollectionProgress((prev) => {
+            const base: CollectionProgressState =
+              prev ?? {
+                you: {
+                  username: you,
+                  games: 0,
+                  monthsFetched: 0,
+                  monthsTotal: MONTHS_BACK,
+                },
+                opponent: {
+                  username: opponent,
+                  games: 0,
+                  monthsFetched: 0,
+                  monthsTotal: MONTHS_BACK,
+                },
+                totalGames: 0,
+              };
+            const nextSide = {
+              ...base[side],
+              games: progress.games,
+              monthsFetched: progress.monthsFetched,
+              monthsTotal: progress.monthsTotal,
+            };
+            const next = {
+              ...base,
+              [side]: nextSide,
+            } as CollectionProgressState;
+            next.totalGames = next.you.games + next.opponent.games;
+            return next;
+          });
+        };
+      };
+      const applyYouProgress = updateCollectionProgress("you");
+      const applyOpponentProgress = updateCollectionProgress("opponent");
       try {
         const [yourGames, oppGames] = await Promise.all([
-          chessCom.getRecentGames(you, 4),
-          chessCom.getRecentGames(opponent, 4),
+          chessCom.getRecentGames(you, MONTHS_BACK, applyYouProgress),
+          chessCom.getRecentGames(opponent, MONTHS_BACK, applyOpponentProgress),
         ]);
         const openingTree = analyzer.buildOpeningTree({
           you: { username: you },
@@ -169,6 +233,7 @@ export default function App() {
         setError(e instanceof Error ? e.message : String(e));
       } finally {
         setLoading(false);
+        setCollectionProgress(null);
       }
     },
     [analyzer, chessCom]
@@ -448,11 +513,42 @@ export default function App() {
   const statusCards = (
     <div className="status-stack">
       {loading && (
-        <div className="status-card is-loading">
+        <div className="status-card is-loading" aria-live="polite">
           <span aria-hidden>...</span>
           <div>
             <strong>Collecte Chess.com</strong>
             <p>Je croise tes parties récentes pour dresser le profil.</p>
+            {collectionProgress && (
+              <div className="status-progress">
+                <p className="status-progress__total">
+                  {collectionProgress.totalGames} parties synchronisées
+                </p>
+                <div className="status-progress__list">
+                  {(["you", "opponent"] as const).map((side) => {
+                    const entry = collectionProgress[side];
+                    const progressRatio =
+                      entry.monthsTotal > 0 ? Math.min(1, entry.monthsFetched / entry.monthsTotal) : 0;
+                    return (
+                      <div key={side} className="status-progress__entry">
+                        <div className="status-progress__entry-header">
+                          <span className="status-progress__name">{entry.username}</span>
+                          <span className="status-progress__value">{entry.games} parties</span>
+                        </div>
+                        <div className="status-progress__meter" aria-hidden="true">
+                          <div
+                            className="status-progress__fill"
+                            style={{ width: `${progressRatio * 100}%` }}
+                          />
+                        </div>
+                        <span className="status-progress__hint">
+                          {entry.monthsFetched}/{entry.monthsTotal || MONTHS_BACK} mois
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

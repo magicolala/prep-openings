@@ -482,6 +482,74 @@
   transform: translateY(-2px);
 }
 
+.status-progress {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-progress__total {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.status-progress__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-progress__entry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface-glass);
+  border: 1px solid rgba(112, 91, 255, 0.18);
+}
+
+.status-progress__entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+.status-progress__name {
+  font-weight: 600;
+}
+
+.status-progress__value {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.status-progress__meter {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(112, 91, 255, 0.22);
+  overflow: hidden;
+}
+
+.status-progress__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent-400);
+  transform-origin: left center;
+  transition: width 0.3s ease;
+}
+
+.status-progress__hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 .line-board {
   display: grid;
   gap: 24px;
