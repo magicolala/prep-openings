@@ -78,7 +78,12 @@ export default function PrepSheetView({ sheet, node }: PrepSheetViewProps) {
                   <p className="leak-card__line">{leak.sanLine.join(" ")}</p>
                 </div>
                 <div className="leak-card__stat">
-                  <span className="leak-card__value">{formatPercent(leak.playerScore)}</span>
+                  <span
+                    className="leak-card__value"
+                    title="Score moyen de ton adversaire sur ce coup (victoire = 100 %, nulle = 50 %, défaite = 0 %)."
+                  >
+                    {formatPercent(leak.playerScore)}
+                  </span>
                   <span className="leak-card__caption">Score adverse</span>
                 </div>
               </header>
@@ -93,17 +98,45 @@ export default function PrepSheetView({ sheet, node }: PrepSheetViewProps) {
                   <span className="insight-label">Fréquence</span>
                   <p className="insight-value">{leak.frequency} parties</p>
                   {popularity !== null && (
-                    <span className="insight-caption">Popularité Explorer {formatPercent(popularity)}</span>
+                    <span
+                      className="insight-caption"
+                      title="Part des parties Explorer où l'adversaire choisit ce coup."
+                    >
+                      Popularité Explorer {formatPercent(popularity)}
+                    </span>
                   )}
                 </div>
                 <div>
                   <span className="insight-label">Gap</span>
-                  <p className="insight-value">{leakScoreDiff}</p>
-                  {gap !== null && <span className="insight-caption">Écart {gap > 0 ? "à exploiter" : "à surveiller"}</span>}
+                  <p
+                    className="insight-value"
+                    title="Comparaison entre le score observé de ton adversaire et la référence Explorer."
+                  >
+                    {leakScoreDiff}
+                  </p>
+                  {gap !== null && (
+                    <span
+                      className="insight-caption"
+                      title={
+                        gap > 0
+                          ? "Ton adversaire marque davantage de points que la moyenne : opportunité à sanctionner."
+                          : "Ton adversaire sous-performe par rapport à la moyenne : tendance à surveiller."
+                      }
+                    >
+                      Écart {gap > 0 ? "à exploiter" : "à surveiller"}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {overlap && <p className="leak-card__overlap">{overlap}</p>}
+              {overlap && (
+                <p
+                  className="leak-card__overlap"
+                  title="Résultats obtenus dans tes propres parties sur cette position."
+                >
+                  {overlap}
+                </p>
+              )}
 
               <div className="leak-card__actions">
                 <div className="leak-card__chips">
@@ -111,8 +144,8 @@ export default function PrepSheetView({ sheet, node }: PrepSheetViewProps) {
                     punishments.map((item) => (
                       <span key={`${leak.id}-${item.label}`} className="response-chip">
                         <strong>{item.label}</strong>
-                        <small>{item.score}</small>
-                        <small>{item.total} parties</small>
+                        <small title="Score moyen attendu pour toi selon Explorer si tu joues cette réponse.">{item.score}</small>
+                        <small title="Nombre de parties Explorer utilisées pour cette recommandation.">{item.total} parties</small>
                       </span>
                     ))
                   ) : (
