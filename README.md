@@ -1,73 +1,76 @@
-# React + TypeScript + Vite
+# prep-openings
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Application web pour préparer et explorer des ouvertures d’échecs. Le projet est basé sur Vite + React + TypeScript et déployé automatiquement sur GitHub Pages via GitHub Actions.
 
-Currently, two official plugins are available:
+## 🚀 Fonctionnalités prévues
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Visualisation d’un échiquier interactif.
+- Gestion et analyse de lignes d’ouverture.
+- Suggestions de coups et statistiques par variante.
+- Export/import de répertoires au format PGN.
 
-## React Compiler
+## 🧰 Stack technique
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- [Vite](https://vitejs.dev/) + [React](https://react.dev/)
+- TypeScript
+- ESLint, Prettier
+- GitHub Actions pour CI/CD (build, lint, déploiement sur GitHub Pages)
 
-## Expanding the ESLint configuration
+## 📦 Prérequis
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Node.js 18+
+- pnpm (recommandé) ou npm
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## ▶️ Démarrage
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm install
+pnpm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+L’application est ensuite accessible sur [http://localhost:5173](http://localhost:5173).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🧪 Qualité
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Commande              | Description                          |
+| --------------------- | ------------------------------------ |
+| `pnpm run lint`       | Exécute ESLint sur le projet         |
+| `pnpm run typecheck`  | Lancement des vérifications TS       |
+| `pnpm run test`       | Lance la suite de tests (Vitest)     |
+| `pnpm run build`      | Build de production                  |
+
+## 🌐 Déploiement GitHub Pages
+
+Le workflow `.github/workflows/deploy.yml` déclenche les étapes suivantes pour chaque push sur `main` ou déclenchement manuel:
+
+1. Installation des dépendances et cache pnpm.
+2. Lint avec autofix puis vérification qu’aucune correction n’est requise.
+3. Build de l’application.
+4. Publication de l’artefact et déploiement sur GitHub Pages.
+
+## 🗂️ Structure du projet
+
 ```
+.
+├── public/                 # Assets statiques
+├── src/
+│   ├── assets/
+│   ├── components/
+│   ├── lib/
+│   ├── pages/
+│   └── App.tsx
+├── .github/workflows/      # Pipelines CI/CD
+├── AGENTS.md               # Consignes de contribution
+└── README.md               # Ce fichier
+```
+
+## 🤝 Contribution
+
+1. Créer une branche `feature/<slug>` ou `fix/<slug>`.
+2. Implémenter la fonctionnalité ou correction.
+3. S’assurer que lint, typecheck, tests et build passent.
+4. Ouvrir une PR en suivant les guidelines de `AGENTS.md`.
+
+## 📄 Licence
+
+Ce projet est distribué sous licence MIT. Voir [LICENSE](LICENSE) si présent.
