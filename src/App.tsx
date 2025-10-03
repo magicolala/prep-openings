@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import UsernameForm from "./ui/components/UsernameForm";
 import OpeningTreeColumn from "./ui/components/OpeningTreeColumn";
+import LineViewer from "./ui/components/LineViewer";
 import PrepSheetView from "./ui/components/PrepSheetView";
 import { ExperienceToolbar } from "./ui/components/ExperienceToolbar";
 import { VoiceInterface } from "./ui/components/VoiceInterface";
@@ -736,6 +737,7 @@ export default function App() {
                     onSelect={handleSelectNode}
                   />
                 </div>
+                {selectedNode && <LineViewer node={selectedNode} />}
               </>
             )}
 

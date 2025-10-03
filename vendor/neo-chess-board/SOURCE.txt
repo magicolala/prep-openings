@@ -1,0 +1,4 @@
+Files copied from https://github.com/magicolala/Neo-Chess-Board-Ts-Library (branch main)
+Commit: 55700afc6fcb607aae48b2e075f4e22b48dfcf64
+Built with: npm run build:lib (TypeScript compiler)
+Only the dist/core, dist/react, dist/index.js, and dist/index.d.ts artifacts are included.
