@@ -43,7 +43,7 @@ export interface ExplorerPositionInfo {
   moves: ExplorerMoveStat[];
   recentGames?: Array<{
     id?: string;
-    winner?: "white" | "black" | null;
+    winner?: "white" | "black" | "draw" | null;
     speed?: string;
     mode?: string;
     white?: { name?: string; rating?: number };
