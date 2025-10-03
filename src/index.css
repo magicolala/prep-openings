@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap');
+
 :root {
   color-scheme: light;
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -73,13 +75,6 @@
   :root {
     color-scheme: dark;
   }
-}
-
-@font-face {
-  font-family: "Inter";
-  src: local("Inter"), url("https://fonts.gstatic.com/s/inter/v12/UcCO3H6mBB8r6X4m2L9Z5w.woff2") format("woff2");
-  font-display: swap;
-  font-weight: 400 700;
 }
 
 * {
