@@ -135,10 +135,13 @@ export function LineViewer({ node }: { node: OpeningFenNode }) {
   const activeSnapshot = snapshots[cursor];
   const activeMoveIndex = Math.min(displayedMoves.length - 1, Math.max(-1, cursor - 1));
   const orientation: Orientation = node.color === "black" ? "black" : "white";
-  const highlightSquares = activeSnapshot?.lastMove
-    ? [activeSnapshot.lastMove.from, activeSnapshot.lastMove.to]
-    : undefined;
-  const highlightSignature = highlightSquares?.join(",") ?? "";
+  const lastMove = activeSnapshot?.lastMove;
+  const highlightSquares = useMemo(() => {
+    if (!lastMove) return undefined;
+    return [lastMove.from, lastMove.to].map((square) =>
+      square.toLowerCase() as Square
+    );
+  }, [lastMove]);
 
   useEffect(() => {
     const board = boardRef.current;
@@ -148,9 +151,9 @@ export function LineViewer({ node }: { node: OpeningFenNode }) {
     if (!highlightSquares || highlightSquares.length === 0) return;
 
     highlightSquares.forEach((square) => {
-      board.addHighlight(square.toLowerCase() as Square, "yellow");
+      board.addHighlight(square, "yellow");
     });
-  }, [highlightSignature, activeSnapshot?.fen]);
+  }, [highlightSquares, activeSnapshot?.fen]);
 
   const goTo = (nextCursor: number) => {
     setCursor(Math.max(0, Math.min(nextCursor, Math.max(0, snapshots.length - 1))));
