@@ -13,6 +13,7 @@
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.8",
     "chess.js": "^1.4.0",
+    "@magicolala/neo-chess-board": "file:vendor/neo-chess-board",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "zod": "^4.1.11"

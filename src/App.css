@@ -1,5 +1,5 @@
 .container {
-  max-width: 1200px;
+  max-width: 1800px;
   width: 100%;
   margin: 0 auto;
   padding-inline: 24px;
@@ -594,40 +594,29 @@
   align-items: center;
 }
 
-.line-viewer__board-grid {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  aspect-ratio: 1 / 1;
+.line-viewer__board-surface {
+  position: relative;
   width: 100%;
-  max-width: 320px;
+  max-width: 420px;
+  aspect-ratio: 1 / 1;
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--border-subtle);
-  box-shadow: inset 0 12px 32px rgba(15, 23, 42, 0.08);
+  background: radial-gradient(circle at 30% 30%, rgba(148, 163, 184, 0.16), transparent 65%),
+    var(--surface-glass);
+  box-shadow:
+    inset 0 12px 32px rgba(15, 23, 42, 0.08),
+    0 18px 36px rgba(15, 23, 42, 0.18);
 }
 
-.line-viewer__square {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: clamp(1.25rem, 2.2vw, 1.9rem);
-  font-weight: 600;
-  transition: transform 0.2s ease;
+.line-viewer__neo-board {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
-.line-viewer__square.is-light {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(241, 245, 249, 0.92));
-  color: var(--text-primary);
-}
-
-.line-viewer__square.is-dark {
-  background: linear-gradient(135deg, rgba(148, 163, 184, 0.28), rgba(71, 85, 105, 0.3));
-  color: var(--text-primary);
-}
-
-.line-viewer__square.is-highlighted {
-  box-shadow: inset 0 0 0 3px rgba(112, 91, 255, 0.55);
-  transform: scale(1.02);
+.line-viewer__neo-board canvas {
+  border-radius: inherit;
 }
 
 .line-viewer__controls {
@@ -814,9 +803,9 @@
     align-items: stretch;
   }
 
-  .line-viewer__board-grid {
+  .line-viewer__board-surface {
     margin: 0 auto;
-    max-width: 280px;
+    max-width: min(100%, 360px);
   }
 }
 
@@ -1605,27 +1594,30 @@
 }
 
 html.debug .container {
-  background: linear-gradient(90deg, rgba(130, 0, 255, 0.06) 1px, transparent 1px) 0 0 /
-    calc(1200px / 12) 100%;
+  background: linear-gradient(90deg, rgba(130, 0, 255, 0.06) 1px, transparent 1px) 0 0 / calc(1200px / 12) 100%;
 }
 
 @keyframes pulse {
   0% {
     box-shadow: 0 0 0 0 rgba(112, 91, 255, 0.45);
   }
+
   70% {
     box-shadow: 0 0 0 22px rgba(112, 91, 255, 0);
   }
+
   100% {
     box-shadow: 0 0 0 0 rgba(112, 91, 255, 0);
   }
 }
 
 @keyframes wave {
+
   0%,
   100% {
     height: 8px;
   }
+
   50% {
     height: 28px;
   }

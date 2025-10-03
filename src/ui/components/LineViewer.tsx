@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
+import { NeoChessBoard, type NeoChessRef } from "@magicolala/neo-chess-board/react";
+import type { Square } from "@magicolala/neo-chess-board";
 import type { OpeningFenNode } from "../../domain/models";
 
 type Orientation = "white" | "black";
@@ -11,46 +13,7 @@ type Snapshot = {
   lastMove?: { from: string; to: string };
 };
 
-const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
-
-const PIECE_GLYPHS: Record<string, string> = {
-  p: "♟",
-  r: "♜",
-  n: "♞",
-  b: "♝",
-  q: "♛",
-  k: "♚",
-  P: "♙",
-  R: "♖",
-  N: "♘",
-  B: "♗",
-  Q: "♕",
-  K: "♔",
-};
-
 const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
-
-const parseFenBoard = (fen: string) => {
-  const [placement] = fen.split(" ");
-  const rows = placement.split("/");
-  const board: (string | null)[][] = Array.from({ length: 8 }, () => Array(8).fill(null));
-
-  rows.forEach((row, fenRankIndex) => {
-    let file = 0;
-    for (const char of row) {
-      const emptyCount = Number.parseInt(char, 10);
-      if (!Number.isNaN(emptyCount)) {
-        file += emptyCount;
-        continue;
-      }
-      const rank = 7 - fenRankIndex; // rank 0 is first rank from White's perspective
-      board[rank][file] = char;
-      file += 1;
-    }
-  });
-
-  return board;
-};
 
 const computeBaseSnapshots = (node: OpeningFenNode): Snapshot[] => {
   const chess = new Chess();
@@ -125,47 +88,6 @@ const buildMovePairs = (moves: string[]) => {
   return pairs;
 };
 
-const squareKey = (file: number, rank: number) => `${FILES[file]}${rank + 1}`;
-
-const MiniBoard = ({
-  fen,
-  orientation,
-  highlight,
-}: {
-  fen: string;
-  orientation: Orientation;
-  highlight?: string[];
-}) => {
-  const board = useMemo(() => parseFenBoard(fen), [fen]);
-  const highlightSet = useMemo(() => new Set((highlight ?? []).map((sq) => sq.toLowerCase())), [highlight]);
-  const rankOrder = orientation === "white" ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
-  const fileOrder = orientation === "white" ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
-
-  return (
-    <div className="line-viewer__board-grid" role="img" aria-label={`Position après ${fen}`}> 
-      {rankOrder.map((rank) =>
-        fileOrder.map((file) => {
-          const piece = board[rank][file];
-          const algebraic = squareKey(file, rank);
-          const isLight = (file + rank) % 2 === 0;
-          const isHighlighted = highlightSet.has(algebraic);
-          return (
-            <span
-              key={`${algebraic}-${fen}`}
-              className={`line-viewer__square${isLight ? " is-light" : " is-dark"}${
-                isHighlighted ? " is-highlighted" : ""
-              }`}
-              aria-label={`${algebraic}${piece ? ` ${piece}` : ""}`}
-            >
-              {piece ? PIECE_GLYPHS[piece] : ""}
-            </span>
-          );
-        })
-      )}
-    </div>
-  );
-};
-
 export function LineViewer({ node }: { node: OpeningFenNode }) {
   const [selectedContinuation, setSelectedContinuation] = useState<string | null>(null);
   const baseSnapshots = useMemo(() => computeBaseSnapshots(node), [node]);
@@ -175,6 +97,10 @@ export function LineViewer({ node }: { node: OpeningFenNode }) {
   );
   const snapshots = useMemo(() => [...baseSnapshots, ...continuationSnapshots], [baseSnapshots, continuationSnapshots]);
   const [cursor, setCursor] = useState(() => Math.max(0, snapshots.length - 1));
+  const boardRef = useRef<NeoChessRef | null>(null);
+  const handleBoardRef = useCallback((instance: NeoChessRef | null) => {
+    boardRef.current = instance;
+  }, []);
 
   useEffect(() => {
     setSelectedContinuation(null);
@@ -212,6 +138,19 @@ export function LineViewer({ node }: { node: OpeningFenNode }) {
   const highlightSquares = activeSnapshot?.lastMove
     ? [activeSnapshot.lastMove.from, activeSnapshot.lastMove.to]
     : undefined;
+  const highlightSignature = highlightSquares?.join(",") ?? "";
+
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+
+    board.clearHighlights();
+    if (!highlightSquares || highlightSquares.length === 0) return;
+
+    highlightSquares.forEach((square) => {
+      board.addHighlight(square.toLowerCase() as Square, "yellow");
+    });
+  }, [highlightSignature, activeSnapshot?.fen]);
 
   const goTo = (nextCursor: number) => {
     setCursor(Math.max(0, Math.min(nextCursor, Math.max(0, snapshots.length - 1))));
@@ -236,9 +175,24 @@ export function LineViewer({ node }: { node: OpeningFenNode }) {
 
       <div className="line-viewer__body">
         <div className="line-viewer__board">
-          {activeSnapshot && (
-            <MiniBoard fen={activeSnapshot.fen} orientation={orientation} highlight={highlightSquares} />
-          )}
+          <div className="line-viewer__board-surface">
+            {activeSnapshot && (
+              <NeoChessBoard
+                ref={handleBoardRef}
+                fen={activeSnapshot.fen}
+                orientation={orientation}
+                interactive={false}
+                showHighlights
+                showArrows={false}
+                allowPremoves={false}
+                highlightLegal={false}
+                showCoordinates
+                animationMs={200}
+                size={420}
+                className="line-viewer__neo-board"
+              />
+            )}
+          </div>
           <div className="line-viewer__controls" aria-label="Contrôles de navigation de la ligne">
             <button type="button" onClick={() => goTo(0)} disabled={cursor === 0}>
               «
