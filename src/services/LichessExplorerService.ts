@@ -7,6 +7,32 @@ import { Chess } from "chess.js";
  * We use the lichess database by default. CORS is allowed.
  * Reference shape based on explorer responses.
  */
+interface LichessExplorerMove {
+  san: string;
+  white?: number;
+  draws?: number;
+  black?: number;
+  averageRating?: number;
+}
+
+interface LichessExplorerRecentGame {
+  id?: string;
+  winner?: "white" | "black" | "draw" | null;
+  speed?: string;
+  mode?: string;
+  white?: { name?: string; rating?: number };
+  black?: { name?: string; rating?: number };
+  year?: number;
+  month?: string;
+  uci?: string;
+}
+
+interface LichessExplorerResponse {
+  opening?: { name?: string; eco?: string };
+  moves?: LichessExplorerMove[];
+  recentGames?: LichessExplorerRecentGame[];
+}
+
 export class LichessExplorerService implements ILichessExplorerService {
   private base = "https://explorer.lichess.ovh/lichess"; // reliable mirror used by many projects
   private cacheTtlMs = 12 * 60 * 60 * 1000; // 12h
@@ -49,7 +75,7 @@ export class LichessExplorerService implements ILichessExplorerService {
     return run;
   }
 
-  private async fetchJsonWithRateLimit(url: string): Promise<any> {
+  private async fetchJsonWithRateLimit<T>(url: string): Promise<T> {
     const maxAttempts = 3;
     let attempt = 0;
     let lastError: Error | null = null;
@@ -79,7 +105,8 @@ export class LichessExplorerService implements ILichessExplorerService {
       }
 
       this.nextAllowedCallAt = Date.now();
-      return response.json();
+      const json = (await response.json()) as T;
+      return json;
     }
 
     throw lastError ?? new Error("Lichess explorer rate limit depassee a plusieurs reprises.");
@@ -118,25 +145,25 @@ export class LichessExplorerService implements ILichessExplorerService {
       const cachedDuringWait = this.readCache<ExplorerPositionInfo>(cacheKey);
       if (cachedDuringWait) return cachedDuringWait;
 
-      const data = await this.fetchJsonWithRateLimit(url);
-      const moves = (data.moves ?? []).map((m: any) => ({
-        san: m.san,
-        white: m.white ?? 0,
-        draws: m.draws ?? 0,
-        black: m.black ?? 0,
-        total: (m.white ?? 0) + (m.draws ?? 0) + (m.black ?? 0),
-        averageRating: m.averageRating,
+      const data = await this.fetchJsonWithRateLimit<LichessExplorerResponse>(url);
+      const moves = (data.moves ?? []).map((move) => ({
+        san: move.san,
+        white: move.white ?? 0,
+        draws: move.draws ?? 0,
+        black: move.black ?? 0,
+        total: (move.white ?? 0) + (move.draws ?? 0) + (move.black ?? 0),
+        averageRating: move.averageRating,
       }));
-      const recentGames = (data.recentGames ?? []).map((g: any) => ({
-        id: g.id,
-        winner: g.winner,
-        speed: g.speed,
-        mode: g.mode,
-        white: g.white,
-        black: g.black,
-        year: g.year,
-        month: g.month,
-        uci: g.uci,
+      const recentGames = (data.recentGames ?? []).map((game) => ({
+        id: game.id,
+        winner: game.winner,
+        speed: game.speed,
+        mode: game.mode,
+        white: game.white,
+        black: game.black,
+        year: game.year,
+        month: game.month,
+        uci: game.uci,
       }));
       const opening = data.opening ? { name: data.opening.name, eco: data.opening.eco } : undefined;
       const result: ExplorerPositionInfo = { opening, moves, recentGames };

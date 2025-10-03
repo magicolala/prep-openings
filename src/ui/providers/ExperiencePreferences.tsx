@@ -15,7 +15,7 @@ interface PreferenceState {
   voiceEnabled: boolean;
 }
 
-interface ExperiencePreferencesContext extends PreferenceState {
+interface ExperiencePreferencesContextValue extends PreferenceState {
   setAppearance: (appearance: ThemeAppearance) => void;
   setAccentHue: (hue: number) => void;
   setMotion: (motion: MotionPreference) => void;
@@ -35,7 +35,7 @@ const DEFAULT_PREFERENCES: PreferenceState = {
 
 const STORAGE_KEY = "prep-openings.preferences";
 
-const ExperiencePreferencesContext = createContext<ExperiencePreferencesContext | undefined>(undefined);
+const ExperiencePreferencesContext = createContext<ExperiencePreferencesContextValue | undefined>(undefined);
 
 const clampHue = (value: number): number => {
   if (Number.isNaN(value)) return DEFAULT_PREFERENCES.accentHue;
@@ -162,7 +162,7 @@ export function ExperiencePreferencesProvider({ children }: { children: ReactNod
     }
   }, [state]);
 
-  const value = useMemo<ExperiencePreferencesContext>(() => ({
+  const value = useMemo<ExperiencePreferencesContextValue>(() => ({
     ...state,
     setAppearance: appearance => setState(prev => ({ ...prev, appearance })),
     setAccentHue: hue => setState(prev => ({ ...prev, accentHue: clampHue(Math.round(hue)) })),
@@ -175,10 +175,11 @@ export function ExperiencePreferencesProvider({ children }: { children: ReactNod
   return <ExperiencePreferencesContext.Provider value={value}>{children}</ExperiencePreferencesContext.Provider>;
 }
 
-export const useExperiencePreferences = () => {
+// eslint-disable-next-line react-refresh/only-export-components
+export function useExperiencePreferences(): ExperiencePreferencesContextValue {
   const ctx = useContext(ExperiencePreferencesContext);
   if (!ctx) {
     throw new Error("useExperiencePreferences must be used within ExperiencePreferencesProvider");
   }
   return ctx;
-};
+}
