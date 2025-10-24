@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Perspectives — prep-openings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial; background:#0f1419; color:#e5e7eb; margin:0; }
+    header, main { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+    .card { background:#151a21; border:1px solid #223042; border-radius:12px; padding:1rem; }
+    .row { display:grid; gap:1rem; }
+    .row.cols-2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .row.cols-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    label { font-size:0.9rem; color:#9aa4b2; }
+    input, select, button { background:#0f1419; color:#e5e7eb; border:1px solid #2a2f3a; border-radius:10px; padding:0.6rem 0.75rem; }
+    button { cursor:pointer; }
+    table { width:100%; border-collapse: collapse; font-size:0.95rem; }
+    th, td { padding:0.6rem 0.5rem; border-bottom:1px solid #223042; }
+    th { text-align:left; color:#9aa4b2; cursor:pointer; user-select:none; }
+    .muted { color:#9aa4b2; font-size:0.9rem; }
+    .kpi { font-size:2rem; font-weight:700; }
+    .sub { color:#9aa4b2; font-size:0.85rem; }
+    .ok { color:#86efac; }
+    .warn { color:#facc15; }
+    .bad { color:#f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 style="margin:0 0 0.25rem 0;">Perspectives</h1>
+    <div class="muted">Analyse tes parties (Chess.com + Lichess) en local. Rien n’est envoyé ailleurs.</div>
+  </header>
+
+  <main class="row" style="gap:1.25rem;">
+    <section class="card">
+      <div class="row cols-3">
+        <div>
+          <label for="platform">Plateforme</label><br/>
+          <select id="platform">
+            <option value="both">Both</option>
+            <option value="chesscom">Chess.com</option>
+            <option value="lichess">Lichess</option>
+          </select>
+        </div>
+        <div>
+          <label for="username">Username</label><br/>
+          <input id="username" placeholder="cedchesss" />
+        </div>
+        <div>
+          <label for="minGames">Min parties par ouverture</label><br/>
+          <input id="minGames" type="number" min="1" value="8" />
+        </div>
+      </div>
+      <div style="margin-top:0.75rem; display:flex; gap:0.5rem;">
+        <button id="btnRun">Analyser</button>
+        <button id="btnLoadCache" title="Recharge depuis le cache local">Charger cache</button>
+        <button id="btnClearCache" title="Efface le cache pour ce user">Vider cache</button>
+      </div>
+      <div id="status" class="muted" style="margin-top:0.75rem;"></div>
+    </section>
+
+    <section class="row cols-2">
+      <div class="card">
+        <div class="muted">Score par couleur</div>
+        <div id="colorStats" style="margin-top:0.5rem;"></div>
+      </div>
+      <div class="card">
+        <div class="muted">Cadence</div>
+        <div id="tcStats" style="margin-top:0.5rem;"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="muted">Top ouvertures</div>
+      <div id="openings" style="margin-top:0.5rem;"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./assets/perspectives/perspectives.js"></script>
+</body>
+</html>
